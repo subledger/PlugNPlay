@@ -270,8 +270,8 @@ private
                                                  version: 1
 
     # attach global accounts to categories
-    revenue_category.attach account: get_revenue_account
-    cash_category.attach account: get_cash_account
+    revenue_category.attach account: revenue_account
+    cash_category.attach account: cash_account
 
     # create the report
     balance_sheet = @subledger.report.create description: 'Snap-shot Report'
