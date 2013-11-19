@@ -9,13 +9,13 @@ class SimulateController < ApplicationController
   def invoice_customer
     invoice = params[:invoice]
     invoice_value = BigDecimal.new(invoice[:value])
-    usaw_value = (invoice_value - sports_ngin_fee) * usaw_rate
-    minnesota_value = (invoice_value - sports_ngin_fee) * minnesota_rate
+    usaw_value = (invoice_value - sport_ngin_fee) * usaw_rate
+    minnesota_value = (invoice_value - sport_ngin_fee) * minnesota_rate
 
     money_service.invoice_customer(
       customer_id: invoice[:customer_id],
       invoice_value: invoice_value,
-      sportsngin_value: sports_ngin_fee,
+      sportngin_value: sport_ngin_fee,
       organizations_values: [
         { account_id: "usaw", value: usaw_value },
         { account_id: "minnesota", value: minnesota_value }
@@ -41,7 +41,7 @@ class SimulateController < ApplicationController
   end
 
 private
-  def sports_ngin_fee
+  def sport_ngin_fee
     10
   end
 

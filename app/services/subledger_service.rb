@@ -22,11 +22,11 @@ class SubledgerService
     @subledger
   end
 
-  # create the journal entries related to invoicing a Sports Ngin customer:
+  # create the journal entries related to invoicing a Sport Ngin customer:
   # - debit account receivable from customer
   # - credit organizations accounts payable
-  # - credit revenue account from Sports Ngin
-  def invoice_customer(customer_id, invoice_value, sportsngin_value, organizations_values, reference_url, description)
+  # - credit revenue account from Sport Ngin
+  def invoice_customer(customer_id, invoice_value, sportngin_value, organizations_values, reference_url, description)
     # prepare the journal entrie lines
     je_lines = []
 
@@ -36,10 +36,10 @@ class SubledgerService
       value: @subledger.debit(invoice_value)
     }
 
-    # sports ngin line
+    # sport ngin line
     je_lines << {
       account: get_revenue_account,
-      value: @subledger.credit(sportsngin_value)
+      value: @subledger.credit(sportngin_value)
     }
 
     # organiations lines
@@ -58,9 +58,9 @@ class SubledgerService
     )
   end
 
-  # create the journal entries related to receiving payment from a Sports Ngin
+  # create the journal entries related to receiving payment from a Sport Ngin
   # customer:
-  # - debit cash account from Sports Ngin
+  # - debit cash account from Sport Ngin
   # - credit customer accounts receivable account
   def customer_invoice_payed(customer_id, invoice_value, reference_url, description)
     return @subledger.journal_entry.create_and_post(
@@ -112,13 +112,13 @@ class SubledgerService
     # create global accounts
     revenue_account = create_global_account(
       "Revenue Account",
-      "http://www.sportsngin.com",
+      "http://www.sportngin.com",
        @subledger.credit
     )
 
     cash_account = create_global_account(
       "Cash Account",
-      "http://www.sportsngin.com",
+      "http://www.sportngin.com",
       @subledger.debit
     )
 
