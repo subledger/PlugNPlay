@@ -1,6 +1,6 @@
 # Sports Ngin Subledger Integration Demo
 
-This is Rails application that should be used as reference for integrating with Subledger services.
+This project is a Rails application that should be used as reference for integrating with Subledger services.
 
 It contains a rake task to help performing the initial project setup:
 
@@ -11,11 +11,18 @@ And also services that encapsulate accounting logic and entities mapping from in
 
 https://github.com/subledger/PlugNPlay/tree/master/app/services
 
-Integration shoul be performed by calling the methods exposed on money_service.rb, and examples of use of this methods can be found at:
+Integration should be performed by calling the methods exposed on money_service.rb. Examples of use of this methods can be found at:
 
 https://github.com/subledger/PlugNPlay/blob/master/app/controllers/simulate_controller.rb#L15
 
 https://github.com/subledger/PlugNPlay/blob/master/app/controllers/simulate_controller.rb#L35
+
+## Demo App Requirements
+
+This project is using:
+
+* Ruby: 2.0.0-p247
+* Rails: 4.0.1 
 
 
 ## Demo App Setup
@@ -26,6 +33,8 @@ After cloning the project, run the following commands on project root dir:
 bundle
 rake db:setup
 ```
+
+Please note that you may need to setup values on config/database.yml before running db:setup.
 
 
 ## Subledger Integration Setup
@@ -105,6 +114,6 @@ And then run the rails application from project root:
 bundle exec rails s
 ```
 
-This will start app on http://localhost:3000.
+This will start app on http://localhost:3000
 
-If the environment variables were configured correctly, the app initial page should should their values, and also a link to access the Subledger app related to this credentials. From there, you can see the activity feed and also generate reports.
+If the environment variables were configured correctly, the app initial page should show their values and also a link to access the Subledger app related to this credentials. From there, you can see the activity feed and also generate reports.
