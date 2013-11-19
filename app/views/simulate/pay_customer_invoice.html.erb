@@ -1,0 +1,25 @@
+<h1>Simulate a customer Paying an Invoice</h1>
+
+<%= form_for :invoice, url: simulate_customer_invoice_payed_path do |f| %>
+  <div class="form-group">
+    <%= f.label :customer_id %>
+    <%= f.text_field :customer_id, class: "form-control", placeholder: "Ex: customer1@test.com", autofocus: true %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :value %>
+    <%= f.text_field :value, class: "form-control", placeholder: "Ex: 100" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :description %>
+    <%= f.text_field :description, class: "form-control", placeholder: "Ex: Brazil vs Argentina Game" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :reference_url %>
+    <%= f.url_field :reference_url, class: "form-control", placeholder: "Ex: http://www.sportsngin.com/ticket/123456" %>
+  </div>
+  
+  <%= f.submit "Simulate", class: "btn btn-default" %>
+<% end %>
