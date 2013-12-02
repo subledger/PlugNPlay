@@ -23,8 +23,7 @@ class MoneyService
   # reference_url: a url that identifies this transaction (the ticket show page
   #                for example)
   #
-  # description: text that will be added to the account book to describe the
-  #              transaction
+  # description: text that describes the transaction
   #
   # Example:
   #   invoice_customer(
@@ -61,8 +60,7 @@ class MoneyService
   # reference_url: a url that identifies this transaction (the ticket show page
   #                for example)
   #
-  # description: text that will be added to the account book to describe the
-  #              transaction
+  # description: text that describes the transaction
   #
   # Example:
   #   customer_invoice_payed(
