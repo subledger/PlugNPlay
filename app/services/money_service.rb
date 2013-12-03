@@ -41,6 +41,7 @@ class MoneyService
   def invoice_customer(data)
     # call subledger service, so selling a ticket is automatically accounted for
     subledger.invoice_customer(
+      data[:transaction_id],
       data[:customer_id],
       data[:invoice_value],
       data[:sportngin_value],
@@ -73,6 +74,7 @@ class MoneyService
   def customer_invoice_payed(data)
     # call subledger service, so an invoice payment is automatically account for
     subledger.customer_invoice_payed(
+      data[:transaction_id],
       data[:customer_id],
       data[:invoice_value],
       data[:reference_url],

@@ -1,6 +1,3 @@
-require 'yaml'
-require 'thread'
-
 class SubledgerService
 
   def initialize()
@@ -12,10 +9,6 @@ class SubledgerService
                                :secret      => ENV['SUBLEDGER_SECRET'],
                                :org_id      => ENV['SUBLEDGER_ORG_ID'],
                                :book_id     => ENV['SUBLEDGER_BOOK_ID']
-
-    # load subledger accounts map
-    @mutex = Mutex.new
-    load_accounts_map
   end
 
   def subledger
@@ -26,7 +19,7 @@ class SubledgerService
   # - debit account receivable from customer
   # - credit organizations accounts payable
   # - credit revenue account from Sport Ngin
-  def invoice_customer(customer_id, invoice_value, sportngin_value, organizations_values, reference_url, description)
+  def invoice_customer(transaction_id, customer_id, invoice_value, sportngin_value, organizations_values, reference_url, description)
     # prepare the journal entrie lines
     je_lines = []
 
@@ -50,20 +43,27 @@ class SubledgerService
       }
     end
 
-    return @subledger.journal_entry.create_and_post(
+    result = @subledger.journal_entry.create_and_post(
       effective_at: Time.now,
       description:  description,
       reference:    reference_url,
       lines:        je_lines
     )
+
+    # map transaction id
+    if transaction_id.present?
+      Mapping.map_entity("transaction::invoice_customer", transaction_id, result.id)
+    end
+
+    return result
   end
 
   # create the journal entries related to receiving payment from a Sport Ngin
   # customer:
   # - debit cash account from Sport Ngin
   # - credit customer accounts receivable account
-  def customer_invoice_payed(customer_id, invoice_value, reference_url, description)
-    return @subledger.journal_entry.create_and_post(
+  def customer_invoice_payed(transaction_id, customer_id, invoice_value, reference_url, description)
+    result = @subledger.journal_entry.create_and_post(
       effective_at: Time.now,
       description:  description,
       reference:    reference_url,
@@ -78,6 +78,13 @@ class SubledgerService
         }
       ]
     )
+
+    # map transaction id
+    if transaction_id.present?
+      Mapping.map_entity("transaction::customer_invoice_payed", transaction_id, result.id)
+    end
+
+    return result
   end
 
   def initial_setup(config)
@@ -136,39 +143,7 @@ class SubledgerService
     puts "SUBLEDGER_AR_CATEGORY_ID='#{ar_category_id}'"
     puts "SUBLEDGER_AP_CATEGORY_ID='#{ap_category_id}'"
 
-    puts "\n* We will also map your app customer and organizations accounts"
-    puts "to Subledger specific accounts. For this to work, we will need to"
-    puts "create an YAML file. Please specify the full file path in an env"
-    puts "variable:"
-    puts "SUBLEDGER_ACCOUNTS_MAPPING_FILE=''"
-    puts "\nExample: "
-    puts "SUBLEDGER_ACCOUNTS_MAPPING_FILE='/opt/myapp/config/subledger_accounts_mapping.yml'"
-
     puts "\nAll done. Enjoy!"
-  end
-
-  def accounts_map
-    @accounts_map
-  end
-
-  def load_accounts_map
-    @mutex.synchronize do
-      File.open( ENV['SUBLEDGER_ACCOUNTS_MAPPING_FILE'], 'a+' ) do |yf|
-        @accounts_map = YAML.load(yf) || {}
-      end
-    end
-  end
-
-  def add_accounts_mapping(third_party_account_key, subledger_account_id)
-    @mutex.synchronize do
-      # update the memory cache
-      @accounts_map[third_party_account_key] = subledger_account_id
-      
-      # rewrite the mapping file
-      File.open(ENV['SUBLEDGER_ACCOUNTS_MAPPING_FILE'], 'w') do |yf|
-        YAML.dump(@accounts_map, yf)
-      end
-    end
   end
 
 private
@@ -193,17 +168,17 @@ private
     third_party_account_key = "#{third_party_account_id}::#{account_type.to_s}"
     
     # get the subledger account id
-    account_id = @accounts_map[third_party_account_key]
+    account_id = Mapping.entity_map_value("account", third_party_account_key)
 
     # instantiate/create the account
     return @subledger.accounts.new_or_create(
       id: account_id,
-      description: third_party_account_key,
+      description: CGI::escape(third_party_account_key),
       normal_balance: normal_balance) do |account|
 
       # update cache and file if this is a new account
-      unless @accounts_map.has_key? third_party_account_key
-        add_accounts_mapping(third_party_account_key, account.id)
+      unless Mapping.entity_map_exists?("account", third_party_account_key)
+        Mapping.map_entity("account", third_party_account_key, account.id)
 
         # add to report
         case account_type
