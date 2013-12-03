@@ -1,4 +1,4 @@
-Ngin::Application.routes.draw do
+PlugNPlay::Application.routes.draw do
   get  "simulate/index"
   get  "simulate/buy_ticket"
   post "simulate/invoice_customer"

@@ -3,4 +3,4 @@
 
 require File.expand_path('../config/application', __FILE__)
 
-Ngin::Application.load_tasks
+PlugNPlay::Application.load_tasks

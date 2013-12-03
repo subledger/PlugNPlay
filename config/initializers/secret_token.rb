@@ -9,4 +9,4 @@
 
 # Make sure your secret_key_base is kept private
 # if you're sharing your code publicly.
-Ngin::Application.config.secret_key_base = '3d49aca43938f6e1508064292c1a58219dedf9184bca73d9560b283a05b4b88de10578332f95c52e103f8ebed4a144a19ada87c230607cd265609a23556412f2'
+PlugNPlay::Application.config.secret_key_base = '3d49aca43938f6e1508064292c1a58219dedf9184bca73d9560b283a05b4b88de10578332f95c52e103f8ebed4a144a19ada87c230607cd265609a23556412f2'

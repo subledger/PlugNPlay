@@ -49,4 +49,3 @@ gem 'bootstrap-sass', '~> 3.0.2.0'
 # Subledger Gem
 source 'https://boocx:i9JHYGcWC9zjtw06@gems.boocx.com'
 gem 'subledger'
-
