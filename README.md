@@ -1,4 +1,4 @@
-# Sport Ngin Integration
+# Plug N' Play
 
 This project is a Rails application that should be used as reference for integrating with Subledger services.
 
