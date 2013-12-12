@@ -3,6 +3,48 @@ class MoneyService
   def initialize()
   end
 
+  def cached_get_setup
+    Rails.cache.fetch(["app", "setup"]) { get_setup  }
+  end
+
+  def get_setup
+    return {
+      "subledger" => subledger_service.get_setup
+    }
+  end
+
+  def cached_setup_ready?
+    Rails.cache.fetch(["app", "ready"]) { setup_ready? }
+  end
+
+  def setup_ready?
+    subledger_service.setup_ready?
+  end
+
+  def evict_cache
+    Rails.cache.delete(["app", "setup"])
+    Rails.cache.delete(["app", "ready"])
+    @subledger_service = nil
+  end
+
+  def initial_setup(config)
+    # subledger initial setup
+    subledger_service.initial_setup(config[:subledger]) do |result|
+      AppConfig.transaction do
+        result.each do |key, value|
+          AppConfig.create!(key: key, value: value)
+        end
+      end
+    end
+
+    # evict cache
+    evict_cache
+
+    return {
+      "subledger" => subledger_service.cached_get_setup
+    }
+  end
+
   # This service method handles hooks for the invoicing a customer event. 
   # Event data should hold the following:
   #
@@ -40,7 +82,7 @@ class MoneyService
   #
   def invoice_customer(data)
     # call subledger service, so selling a ticket is automatically accounted for
-    subledger.invoice_customer(
+    subledger_service.invoice_customer(
       data[:transaction_id],
       data[:customer_id],
       data[:invoice_value],
@@ -73,7 +115,7 @@ class MoneyService
   #
   def customer_invoice_payed(data)
     # call subledger service, so an invoice payment is automatically account for
-    subledger.customer_invoice_payed(
+    subledger_service.customer_invoice_payed(
       data[:transaction_id],
       data[:customer_id],
       data[:invoice_value],
@@ -83,7 +125,7 @@ class MoneyService
   end
 
 private
-  def subledger
-    @subledger ||= SubledgerService.new
+  def subledger_service
+    @subledger_service ||= SubledgerService.new
   end
 end

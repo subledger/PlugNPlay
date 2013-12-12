@@ -1,12 +1,12 @@
 PlugNPlay::Application.routes.draw do
-
   namespace :api do
     api version: 1, module: "v1" do
       post "event/trigger", to: "event#trigger"
     end
   end
 
-  get  "simulate/index"
+  resource :setup, only: [:new, :create, :show]
+
   get  "simulate/buy_ticket"
   post "simulate/invoice_customer"
   get  "simulate/pay_customer_invoice"
@@ -16,7 +16,7 @@ PlugNPlay::Application.routes.draw do
   # See how all your routes lay out with "rake routes".
 
   # You can have the root of your site routed with "root"
-  root "simulate#index"
+  root "setups#show"
 
   # Example of regular route:
   #   get 'products/:id' => 'catalog#view'

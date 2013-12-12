@@ -11,7 +11,16 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20131203122747) do
+ActiveRecord::Schema.define(version: 20131203132306) do
+
+  create_table "app_configs", force: true do |t|
+    t.string   "key"
+    t.string   "value"
+    t.datetime "created_at"
+    t.datetime "updated_at"
+  end
+
+  add_index "app_configs", ["key"], name: "index_app_configs_on_key", unique: true, using: :btree
 
   create_table "mappings", force: true do |t|
     t.string   "key"

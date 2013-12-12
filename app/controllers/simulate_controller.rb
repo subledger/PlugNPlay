@@ -1,8 +1,4 @@
 class SimulateController < ApplicationController
-
-  def index
-  end
-
   def buy_ticket
   end
 
@@ -51,9 +47,5 @@ private
 
   def minnesota_rate
     0.4
-  end
-
-  def money_service
-    @money_service ||= MoneyService.new
   end
 end

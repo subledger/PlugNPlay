@@ -21,6 +21,7 @@ class Api::V1::EventController < Api::ApplicationController
       expose :ok
 
     rescue Exception => e
+      #logger.error e.backtrace
       error! :bad_request, metadata: { error_message: e.message }
     end
   end
@@ -29,9 +30,5 @@ private
   def trigger_params
     params.require(:name)
     params.require(:data).permit!
-  end
-
-  def money_service
-    @money_service ||= MoneyService.new
   end
 end

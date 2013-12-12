@@ -75,6 +75,8 @@ GEM
     multipart-post (1.2.0)
     mysql2 (0.3.14)
     polyglot (0.3.3)
+    quiet_assets (1.0.2)
+      railties (>= 3.1, < 5.0)
     rack (1.5.2)
     rack-test (0.6.2)
       rack (>= 1.0)
@@ -147,6 +149,7 @@ DEPENDENCIES
   jbuilder (~> 1.2)
   jquery-rails
   mysql2
+  quiet_assets
   rails (= 4.0.1)
   rocket_pants
   sass-rails (~> 4.0.0)
