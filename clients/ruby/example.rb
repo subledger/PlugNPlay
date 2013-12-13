@@ -15,8 +15,9 @@ class CustomClient
     })
   end
 
-  def initialize(uri)
+  def initialize(uri, timeout = 60)
     @pnp_uri = uri 
+    @pnp_timeout = timeout
   end
 end
 

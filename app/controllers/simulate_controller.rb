@@ -1,53 +1,49 @@
 class SimulateController < ApplicationController
-  def buy_ticket
+  def purchase
   end
 
-  def invoice_customer
-    invoice = params[:invoice]
-    invoice_value = BigDecimal.new(invoice[:value])
-    usaw_value = (invoice_value - sport_ngin_fee) * usaw_rate
-    minnesota_value = (invoice_value - sport_ngin_fee) * minnesota_rate
+  def pay
+    purchase = params[:purchase]
 
-    money_service.invoice_customer(
-      transaction_id: invoice[:transaction_id],
-      customer_id: invoice[:customer_id],
-      invoice_value: invoice_value,
-      sportngin_value: sport_ngin_fee,
-      organizations_values: [
-        { account_id: "usaw", value: usaw_value },
-        { account_id: "minnesota", value: minnesota_value }
-      ],
-      reference_url: invoice[:reference_url],
-      description: invoice[:description]
+    purchase_amount = BigDecimal.new(purchase[:amount])
+    gateway_fees = purchase_amount * gateway_fee_rate
+    atpay_fees = purchase_amount * atpay_fee_rate
+    merchant_amount = purchase_amount - gateway_fees - atpay_fees
+
+    money_service.payment_successfully_processed(
+      transaction_id: purchase[:transaction_id],
+      merchant_id: purchase[:merchant_id],
+      purchase_amount: purchase_amount,
+      merchant_amount: merchant_amount,
+      gateway_fees: gateway_fees,
+      atpay_fees: atpay_fees,
+      reference_url: purchase[:reference_url],
+      description: purchase[:description]
     )
   end
 
-  def pay_customer_invoice
+  def merchant_payout
   end
 
-  def customer_invoice_payed
-    invoice = params[:invoice]
-    invoice_value = BigDecimal.new(invoice[:value])
+  def payout
+    payout = params[:payout]
+    payout_amount = BigDecimal.new(payout[:amount])
 
-    money_service.customer_invoice_payed(
-      transaction_id: invoice[:transaction_id],
-      customer_id: invoice[:customer_id],
-      invoice_value: invoice_value,
-      reference_url: invoice[:reference_url],
-      description: invoice[:description]
+    money_service.payout_to_merchant(
+      transaction_id: payout[:transaction_id],
+      merchant_id: payout[:merchant_id],
+      payout_amount: payout_amount,
+      reference_url: payout[:reference_url],
+      description: payout[:description]
     )
   end
 
 private
-  def sport_ngin_fee
-    10
+  def gateway_fee_rate
+    0.2
   end
 
-  def usaw_rate
-    0.6
-  end
-
-  def minnesota_rate
-    0.4
+  def atpay_fee_rate
+    0.1
   end
 end

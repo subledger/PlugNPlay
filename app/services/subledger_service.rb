@@ -7,34 +7,40 @@ class SubledgerService
     @subledger ||= Subledger.new(cached_get_setup.slice("key_id", "identity_id", "secret", "org_id", "book_id").symbolize_keys)
   end
 
-  # create the journal entries related to invoicing a Sport Ngin customer:
-  # - debit account receivable from customer
-  # - credit organizations accounts payable
-  # - credit revenue account from Sport Ngin
-  def invoice_customer(transaction_id, customer_id, invoice_value, sportngin_value, organizations_values, reference_url, description)
+  # create the journal entries related to a successfully processed payment:
+  # - debit purchase amount from cash_at_gateway account
+  # - debit merchant amount from merchant account payable
+  # - credit gateway fees on gateway fees account
+  # - credit atpay fees on atpay revenue account
+  def payment_successfully_processed(transaction_id, merchant_id, purchase_amount, merchant_amount, gateway_fees, atpay_fees, reference_url, description)
+
     # prepare the journal entrie lines
     je_lines = []
 
-    # customer line
+    # cash at gateway line
     je_lines << {
-      account: to_subledger_account_id(customer_id, :accounts_receivable, subledger.debit),
-      value: subledger.debit(invoice_value)
+      account: get_cash_at_gateway_account,
+      value: subledger.debit(purchase_amount)
     }
 
-    # sport ngin line
+    # accounts payable line
     je_lines << {
-      account: get_revenue_account,
-      value: subledger.credit(sportngin_value)
+      account: to_subledger_account_id(merchant_id, :accounts_payable, subledger.credit),
+      value: subledger.debit(merchant_amount)
     }
 
-    # organiations lines
-    organizations_values.each do |organization|
-      je_lines << {
-        account: to_subledger_account_id(organization[:account_id], :accounts_payable, subledger.credit),
-        value: subledger.credit(organization[:value])
-      }
-    end
+    # gateway fees line
+    je_lines << {
+      account: get_gateway_fees_account,
+      value: subledger.credit(gateway_fees)
+    }
 
+    # atpay revenue line
+    je_lines << {
+      account: get_atpay_revenue_account,
+      value: subledger.credit(atpay_fees)
+    }
+    
     result = subledger.journal_entry.create_and_post(
       effective_at: Time.now,
       description:  description,
@@ -44,36 +50,35 @@ class SubledgerService
 
     # map transaction id
     if transaction_id.present?
-      Mapping.map_entity("transaction::invoice_customer", transaction_id, result.id)
+      Mapping.map_entity("transaction::payment_successfully_processed", transaction_id, result.id)
     end
 
     return result
   end
 
-  # create the journal entries related to receiving payment from a Sport Ngin
-  # customer:
-  # - debit cash account from Sport Ngin
-  # - credit customer accounts receivable account
-  def customer_invoice_payed(transaction_id, customer_id, invoice_value, reference_url, description)
+  # create the journal entries related to a merchant payout:
+  # - credit payout value on cash at bank account
+  # - debit payout value from merchant account
+  def payout_to_merchant(transaction_id, merchant_id, payout_amount, reference_url, description)
     result = subledger.journal_entry.create_and_post(
       effective_at: Time.now,
       description:  description,
       reference:    reference_url,
       lines:        [
         {
-          account: get_cash_account,
-          value:   subledger.debit(invoice_value)
+          account: get_cash_at_bank_account,
+          value:   subledger.credit(payout_amount)
         },
         {
-          account: to_subledger_account_id(customer_id, :accounts_receivable, subledger.debit),
-          value:  subledger.credit(invoice_value)
+          account: to_subledger_account_id(merchant_id, :accounts_payable, subledger.credit),
+          value:  subledger.debit(payout_amount)
         }
       ]
     )
 
     # map transaction id
     if transaction_id.present?
-      Mapping.map_entity("transaction::customer_invoice_payed", transaction_id, result.id)
+      Mapping.map_entity("transaction::payout_to_merchant", transaction_id, result.id)
     end
 
     return result
@@ -85,15 +90,16 @@ class SubledgerService
 
   def get_setup
     return {
-      "key_id"             => AppConfig.get_value("SUBLEDGER_KEY_ID"),
-      "identity_id"        => AppConfig.get_value("SUBLEDGER_IDENTITY_ID"),
-      "secret"             => AppConfig.get_value("SUBLEDGER_SECRET"),
-      "org_id"             => AppConfig.get_value("SUBLEDGER_ORG_ID"),
-      "book_id"            => AppConfig.get_value("SUBLEDGER_BOOK_ID"),
-      "revenue_account_id" => AppConfig.get_value("SUBLEDGER_REVENUE_ACCOUNT_ID"),
-      "cash_account_id"    => AppConfig.get_value("SUBLEDGER_CASH_ACCOUNT_ID"),
-      "ar_category_id"     => AppConfig.get_value("SUBLEDGER_AR_CATEGORY_ID"),
-      "ap_category_id"     => AppConfig.get_value("SUBLEDGER_AP_CATEGORY_ID")
+      "key_id"                     => AppConfig.get_value("SUBLEDGER_KEY_ID"),
+      "identity_id"                => AppConfig.get_value("SUBLEDGER_IDENTITY_ID"),
+      "secret"                     => AppConfig.get_value("SUBLEDGER_SECRET"),
+      "org_id"                     => AppConfig.get_value("SUBLEDGER_ORG_ID"),
+      "book_id"                    => AppConfig.get_value("SUBLEDGER_BOOK_ID"),
+      "cash_at_gateway_account_id" => AppConfig.get_value("SUBLEDGER_CASH_AT_GATEWAY_ACCOUNT_ID"),
+      "gateway_fees_account_id"    => AppConfig.get_value("SUBLEDGER_GATEWAY_FEES_ACCOUNT_ID"),
+      "atpay_revenue_account_id"   => AppConfig.get_value("SUBLEDGER_ATPAY_REVENUE_ACCOUNT_ID"),
+      "cash_at_bank_account_id"    => AppConfig.get_value("SUBLEDGER_CASH_AT_BANK_ACCOUNT_ID"),
+      "ap_category_id"             => AppConfig.get_value("SUBLEDGER_AP_CATEGORY_ID")
     }
   end
 
@@ -136,50 +142,72 @@ class SubledgerService
                                book_id:     book.id
 
     # create global accounts
-    revenue_account = create_global_account(
-      "Revenue Account",
-      "http://www.sportngin.com",
-       @subledger.credit
+    cash_at_gateway_account = create_global_account(
+      "Cash At Gateway",
+      "http://www.atpay.com/cash_at_gateway",
+       @subledger.debit
     )
 
-    cash_account = create_global_account(
-      "Cash Account",
-      "http://www.sportngin.com",
+    gateway_fees_account = create_global_account(
+      "Gateway Fees",
+      "http://www.atpay.com/gateway_fees",
       @subledger.debit
     )
 
+    atpay_revenue_account = create_global_account(
+      "AtPay Revenue",
+      "http://www.atpay.com/atpay_revenue",
+      @subledger.credit
+    )
+
+    cash_at_bank_account = create_global_account(
+      "Cash at Bank",
+      "http://www.atpay.com/cash_at_bank",
+      @subledger.credit
+    )
+
     # create report
-    ar_category_id, ap_category_id = create_report(revenue_account, cash_account)
+    ap_category_id = create_report(
+      cash_at_gateway_account,
+      gateway_fees_account,
+      atpay_revenue_account,
+      cash_at_bank_account
+    )
 
     # evict own cache
     evict_cache
 
     result = {
-      "SUBLEDGER_KEY_ID"             => key.id,
-      "SUBLEDGER_IDENTITY_ID"        => identity.id,
-      "SUBLEDGER_SECRET"             => key.secret,
-      "SUBLEDGER_ORG_ID"             => org.id,
-      "SUBLEDGER_BOOK_ID"            => book.id,
-      "SUBLEDGER_REVENUE_ACCOUNT_ID" => revenue_account.id,
-      "SUBLEDGER_CASH_ACCOUNT_ID"    => cash_account.id,
-      "SUBLEDGER_AR_CATEGORY_ID"     => ar_category_id,
-      "SUBLEDGER_AP_CATEGORY_ID"     => ap_category_id
+      "SUBLEDGER_KEY_ID"                     => key.id,
+      "SUBLEDGER_IDENTITY_ID"                => identity.id,
+      "SUBLEDGER_SECRET"                     => key.secret,
+      "SUBLEDGER_ORG_ID"                     => org.id,
+      "SUBLEDGER_BOOK_ID"                    => book.id,
+      "SUBLEDGER_CASH_AT_GATEWAY_ACCOUNT_ID" => cash_at_gateway_account.id,
+      "SUBLEDGER_GATEWAY_FEES_ACCOUNT_ID"    => gateway_fees_account.id,
+      "SUBLEDGER_ATPAY_REVENUE_ACCOUNT_ID"   => atpay_revenue_account.id,
+      "SUBLEDGER_CASH_AT_BANK_ACCOUNT_ID"    => cash_at_bank_account.id,
+      "SUBLEDGER_AP_CATEGORY_ID"             => ap_category_id
     }
 
     block_given? ? yield(result) : result
   end
 
 private
-  def get_revenue_account
-    @revenue_account ||= subledger.accounts.new_or_create(id: cached_get_setup["revenue_account_id"])
+  def get_cash_at_gateway_account
+    @cash_at_gateway_account ||= subledger.accounts.new_or_create(id: cached_get_setup["cash_at_gateway_account_id"])
   end
 
-  def get_cash_account
-    @cash_account ||= subledger.accounts.new_or_create(id: cached_get_setup['cash_account_id'])
+  def get_gateway_fees_account
+    @gatewat_fees_account ||= subledger.accounts.new_or_create(id: cached_get_setup['gateway_fees_account_id'])
   end
 
-  def get_ar_category
-    @ar_category ||= subledger.category.read(id: cached_get_setup['ar_category_id'])
+  def get_atpay_revenue_account
+    @atpay_revenue_account ||= subledger.accounts.new_or_create(id: cached_get_setup['atpay_revenue_account_id'])
+  end
+
+  def get_cash_at_bank_account
+    @cash_at_bank_account ||= subledger.accounts.new_or_create(id: cached_get_setup['cash_at_bank_account_id'])
   end
 
   def get_ap_category
@@ -207,9 +235,6 @@ private
 
         # add to report
         case account_type
-        when :accounts_receivable
-          get_ar_category.attach account: account
-
         when :accounts_payable
           get_ap_category.attach account: account
         end
@@ -241,7 +266,7 @@ private
                               normal_balance: normal_balance
   end 
 
-  def create_report(revenue_account, cash_account)
+  def create_report(cash_at_gateway_account, gateway_fees_account, atpay_revenue_account, cash_at_bank_account)
     Rails.logger.info "  - Creating Report..."
 
     # create categories
@@ -249,13 +274,13 @@ private
                                                    normal_balance: @subledger.debit,
                                                    version: 1
 
+    cash_category = @subledger.categories.create description: 'Cash',
+                                                 normal_balance: @subledger.debit,
+                                                 version: 1
+
     liabilities_category = @subledger.categories.create description: 'Liabilities',
                                                         normal_balance: @subledger.credit,
                                                         version: 1
-
-    ar_category = @subledger.categories.create description: 'Accounts Receivable',
-                                               normal_balance: @subledger.debit,
-                                               version: 1
 
     ap_category = @subledger.categories.create description: 'Accounts Payable',
                                                normal_balance: @subledger.credit,
@@ -265,32 +290,34 @@ private
                                                     normal_balance: @subledger.credit,
                                                     version: 1
 
-    cash_category = @subledger.categories.create description: 'Cash',
-                                                 normal_balance: @subledger.debit,
-                                                 version: 1
+    expense_category = @subledger.categories.create description: 'Expense',
+                                                    normal_balance: @subledger.debit,
+                                                    version: 1
 
     # attach global accounts to categories
-    revenue_category.attach account: revenue_account
-    cash_category.attach account: cash_account
+    cash_category.attach account: cash_at_gateway_account
+    cash_category.attach account: cash_at_bank_account
+
+    revenue_category.attach account: atpay_revenue_account
+
+    expense_category.attach account: gateway_fees_account
 
     # create the report
-    balance_sheet = @subledger.report.create description: 'Snap-shot Report'
+    balance_sheet = @subledger.report.create description: 'Chart of Accounts'
 
     # attach categories to report
     balance_sheet.attach category: assets_category
     balance_sheet.attach category: liabilities_category
     balance_sheet.attach category: revenue_category
+    balance_sheet.attach category: expense_category
 
     balance_sheet.attach category: cash_category,
-                         parent:   assets_category
-
-    balance_sheet.attach category: ar_category,
                          parent:   assets_category
 
     balance_sheet.attach category: ap_category,
                          parent:   liabilities_category
 
-    return ar_category.id, ap_category.id
+    return ap_category.id
   end
 
 end

@@ -45,80 +45,85 @@ class MoneyService
     }
   end
 
-  # This service method handles hooks for the invoicing a customer event. 
-  # Event data should hold the following:
+  # This service method handles hooks for a successfully processed payment
+  # event. Event data should hold the following:
   #
-  # customer_id: the id that identifies the customer entity on Sport Ngin app
+  # transaction_id: an optional id from atpay, which we will map to subledger
+  #                 transaction id
   #
-  # invoice_value: the full invoice value
+  # merchant_id: the id that identifies the merchant entity on atpay, which we
+  #              will map to a subledger account_id
   #
-  # sportngin_value: the calculated value sportngin will receive from selling
-  #                  this ticket
+  # purchase_amount: the full purchase value
   #
-  # organizations_values: the calculated values each organization will receive
-  #                       from selling this ticket. Example:
-  #   [
-  #     { account_id: 'usaw_id'      , value: 45 , description: '...' },
-  #     { account_id: 'minnesota_id' , value: 45 , description: '...' },
-  #   ]
+  # merchant_amount: value the merchant will receive
   #
-  # reference_url: a url that identifies this transaction (the ticket show page
-  #                for example)
+  # gateway_fees: value the gateway charges
+  #
+  # atpay_fees: value atpay charges
+  #
+  # reference_url: a url on atpay that identifies this transaction (the transaction 
+  #                show page, for example).
   #
   # description: text that describes the transaction
   #
   # Example:
-  #   invoice_customer(
-  #     customer_id: "customer_email@example.com",
-  #     invoice_value: 100,
-  #     sportngin_value: 10,
-  #     organizations_value: [
-  #       { account_id: "usaw"     , value: 45 },
-  #       { account_id: "minnesota", value: 45 }
-  #     ],
-  #     reference_url: "http://www.sportngin.com/ticket/123456",
+  #   payment_successfully_processed(
+  #     transaction_id: "100", // optional
+  #     merchant_id: "merchant1_email@example.com", // doesnt need to be an email
+  #     purchase_amount: "100",
+  #     merchant_amount: "80",
+  #     gateway_amount: "10.10",
+  #     atpay_amount: "9.90",
+  #     reference_url: "http://www.atpay.com/transaction/100",
   #     description: "Brazil vs Argentina Soccer Game"
   #   )
   #
-  def invoice_customer(data)
-    # call subledger service, so selling a ticket is automatically accounted for
-    subledger_service.invoice_customer(
+  def payment_successfully_processed(data)
+    # call subledger service, so a successfull payment is automatically
+    # accounted for
+    subledger_service.payment_successfully_processed(
       data[:transaction_id],
-      data[:customer_id],
-      data[:invoice_value],
-      data[:sportngin_value],
-      data[:organizations_values],
+      data[:merchant_id],
+      data[:purchase_amount],
+      data[:merchant_amount],
+      data[:gateway_fees],
+      data[:atpay_fees],
       data[:reference_url],
       data[:description]
     )
   end
 
-  # This service method handles hooks for when a customer pays an invoice event.
+  # This service method handles hooks for when a payout for a merchant is made.
   # Event data should hold the following:
   #
-  # customer_id: the id that identifies the customer entity on Sport Ngin app
+  # transaction_id: an optional id from atpay, which we will map to subledger
+  #                 transaction id
   #
-  # invoice_value: the full invoice value
+  # merchant_id: the id that identifies the merchant entity on atpay, which we
+  #              will map to a subledger account_id
   #
-  # reference_url: a url that identifies this transaction (the ticket show page
-  #                for example)
+  # payout_amount: the full payout value
+  #
+  # reference_url: a url on atpay that identifies this transaction
   #
   # description: text that describes the transaction
   #
   # Example:
-  #   customer_invoice_payed(
-  #     customer_id: "customer_email@example.com",
-  #     invoice_value: 100,
-  #     reference_url: "http://www.sportngin.com/ticket/123456",
-  #     description: "Brazil vs Argentina Soccer Game"
+  #   payout_to_merchant(
+  #     transaction_id: "16", // optional
+  #     merchant_id: "merchant1_email@example.com", // doesnt need to be an email
+  #     payout_amount: "160",
+  #     reference_url: "http://www.atpay.com/merchant/1/payout/16",
+  #     description: "January 2014 Payout"
   #   )
   #
-  def customer_invoice_payed(data)
-    # call subledger service, so an invoice payment is automatically account for
-    subledger_service.customer_invoice_payed(
+  def payout_to_merchant(data)
+    # call subledger service, so an merchant payout is automatically account for
+    subledger_service.payout_to_merchant(
       data[:transaction_id],
-      data[:customer_id],
-      data[:invoice_value],
+      data[:merchant_id],
+      data[:payout_amount],
       data[:reference_url],
       data[:description]
     )
