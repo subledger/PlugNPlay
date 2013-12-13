@@ -9,6 +9,7 @@ class SimulateController < ApplicationController
     minnesota_value = (invoice_value - sport_ngin_fee) * minnesota_rate
 
     money_service.invoice_customer(
+      transaction_id: invoice[:transaction_id],
       customer_id: invoice[:customer_id],
       invoice_value: invoice_value,
       sportngin_value: sport_ngin_fee,
@@ -29,6 +30,7 @@ class SimulateController < ApplicationController
     invoice_value = BigDecimal.new(invoice[:value])
 
     money_service.customer_invoice_payed(
+      transaction_id: invoice[:transaction_id],
       customer_id: invoice[:customer_id],
       invoice_value: invoice_value,
       reference_url: invoice[:reference_url],
