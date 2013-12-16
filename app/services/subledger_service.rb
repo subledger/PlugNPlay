@@ -13,39 +13,28 @@ class SubledgerService
   # - credit gateway fees on gateway fees account
   # - credit atpay fees on atpay revenue account
   def payment_successfully_processed(transaction_id, merchant_id, purchase_amount, merchant_amount, gateway_fees, atpay_fees, reference_url, description)
-
-    # prepare the journal entrie lines
-    je_lines = []
-
-    # cash at gateway line
-    je_lines << {
-      account: get_cash_at_gateway_account,
-      value: subledger.debit(purchase_amount)
-    }
-
-    # accounts payable line
-    je_lines << {
-      account: to_subledger_account_id(merchant_id, :accounts_payable, subledger.credit),
-      value: subledger.debit(merchant_amount)
-    }
-
-    # gateway fees line
-    je_lines << {
-      account: get_gateway_fees_account,
-      value: subledger.credit(gateway_fees)
-    }
-
-    # atpay revenue line
-    je_lines << {
-      account: get_atpay_revenue_account,
-      value: subledger.credit(atpay_fees)
-    }
-    
     result = subledger.journal_entry.create_and_post(
       effective_at: Time.now,
       description:  description,
       reference:    reference_url,
-      lines:        je_lines
+      lines:        [
+        {
+          account: get_cash_at_gateway_account,
+          value: subledger.debit(purchase_amount)
+        },
+        {
+          account: to_subledger_account_id(merchant_id, :accounts_payable, subledger.credit),
+          value: subledger.credit(merchant_amount)
+        },
+        {
+          account: get_gateway_fees_account,
+          value: subledger.credit(gateway_fees)
+        },
+        {
+          account: get_atpay_revenue_account,
+          value: subledger.credit(atpay_fees)
+        }
+      ]
     )
 
     # map transaction id
