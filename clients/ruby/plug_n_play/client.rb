@@ -9,6 +9,7 @@ module PlugNPlay
       http.read_timeout = @pnp_timeout
       
       req = Net::HTTP::Post.new(uri, initheader = {'Content-Type' =>'application/json'})
+      req.basic_auth(@pnp_user, @pnp_password)
       req.body = {
         "name" => event,
         "data" => data

@@ -22,5 +22,9 @@ module PlugNPlay
 
     # Cache configuration
     config.cache_store = :memory_store, { size: 4.megabytes }
+
+    # Basic authentication
+    config.pnp_user = "pnp"
+    config.pnp_password = "password"
   end
 end

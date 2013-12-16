@@ -1,28 +1,5 @@
-require_relative 'plug_n_play/client'
+require_relative 'at_pay_client'
 
-class CustomClient
-  include PlugNPlay::Client
+client = AtPayClient.new('http://localhost:3000', "pnp", "password")
 
-  def invoice_customer(transaction_id, customer_id, invoice_value, sportngin_value, reference_url, description, organizations_values)
-    trigger("invoice_customer", {
-      'transaction_id'        => transaction_id,
-      'customer_id'           => customer_id,
-      'invoice_value'         => invoice_value,
-      'sportngin_value'       => sportngin_value,
-      'reference_url'         => reference_url,
-      'description'           => description,
-      'organizations_values'  => organizations_values
-    })
-  end
-
-  def initialize(uri, timeout = 60)
-    @pnp_uri = uri 
-    @pnp_timeout = timeout
-  end
-end
-
-client = CustomClient.new('http://localhost:3000')
-puts client.invoice_customer(104, 'alex', '123.33', '23.33', 'http://testingapi.com', 'Testing Client', [
-  { 'account_id' => 'usaw',      'value' => '50' },
-  { 'account_id' => 'minnesota', 'value' => '50' }
-])
+puts client.payment_successfully_processed(302, 'alex', '100', '90', '5', '5', 'http://testingapi.com/302', 'Testing Client with basic authentocation')

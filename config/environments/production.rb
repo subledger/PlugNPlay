@@ -77,4 +77,8 @@ PlugNPlay::Application.configure do
 
   # Use default logging formatter so that PID and timestamp are not suppressed.
   config.log_formatter = ::Logger::Formatter.new
+
+  # Basic authentication
+  config.pnp_user = "pnp"
+  config.pnp_password = "password"
 end

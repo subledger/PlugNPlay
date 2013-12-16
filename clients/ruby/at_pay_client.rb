@@ -26,8 +26,10 @@ class AtPayClient
     })
   end
 
-  def initialize(uri, timeout = 60)
+  def initialize(uri, user, password, timeout = 60)
     @pnp_uri = uri
+    @pnp_user = user
+    @pnp_password = password
     @pnp_timeout = timeout
   end
 end
