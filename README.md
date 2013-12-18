@@ -1,21 +1,17 @@
 # Plug N' Play
 
-This project is a Rails application that should be used as reference for integrating with Subledger services.
+This project is a Rails application that should be used as reference for integrating with Subledger API.
 
-It contains a rake task to help performing the initial project setup:
+It tries to make integrating with Subledger even easier, by encapsulating your accounting logic into single API calls, which in turn make the calls to the lower level Subledger APIs. It also handle mapping between your app user and transaction ids (optional) to the Subledger IDs.
 
-https://github.com/subledger/PlugNPlay/blob/master/lib/tasks/subledger.rake
+It should be deployed as a standalone App, and accessed by means of the API it exposes. To make thigs even simplier, we also provide an HTTP client for the API, so you just need to do add the client to your code, and make the calls at the right place, passing the right data.
 
+The example client code can be found at:
+https://github.com/subledger/PlugNPlay/tree/atpay/clients/ruby
 
-And also services that encapsulate accounting logic and entities mapping from integrating App to Subledger:
+The accounting logic can be found at:
+https://github.com/subledger/PlugNPlay/blob/atpay/app/services/subledger_service.rb
 
-https://github.com/subledger/PlugNPlay/tree/master/app/services
-
-Integration should be performed by calling the methods exposed on money_service.rb. Examples of use of this methods can be found at:
-
-https://github.com/subledger/PlugNPlay/blob/master/app/controllers/simulate_controller.rb#L15
-
-https://github.com/subledger/PlugNPlay/blob/master/app/controllers/simulate_controller.rb#L35
 
 ## Demo App Requirements
 
@@ -31,7 +27,8 @@ After cloning the project, run the following commands on project root dir:
 
 ```
 bundle install
-bundle exec rake db:setup
+bundle exec rake db:create
+bundle exec rake db:migrate
 ```
 
 Please note that you may need to setup values on config/database.yml before running db:setup.
@@ -43,4 +40,5 @@ Please note that you may need to setup values on config/database.yml before runn
 bundle exec rails s
 ```
 
-This will start app on http://localhost:3000
+This will start app on http://localhost:3000.
+By accessing this url the first time, it will guide you through the process of creating credentials for using Subledger API.
