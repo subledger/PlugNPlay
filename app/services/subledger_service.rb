@@ -205,7 +205,7 @@ private
 
   def to_subledger_account_id(third_party_account_id, account_type, normal_balance)
     # calculate the third party account key
-    third_party_account_key = "#{third_party_account_id}::#{account_type.to_s}"
+    third_party_account_key = "#{third_party_account_id}_#{account_type.to_s}"
     
     # get the subledger account id
     account_id = Mapping.entity_map_value("account", third_party_account_key)
