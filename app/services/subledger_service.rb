@@ -204,6 +204,9 @@ private
   end
 
   def to_subledger_account_id(third_party_account_id, account_type, normal_balance)
+    # replace chars on account id for readability
+    third_party_account_id = third_party_account_id.tr(("[@,.]", "_")
+
     # calculate the third party account key
     third_party_account_key = "#{third_party_account_id}_#{account_type.to_s}"
     

@@ -122,6 +122,9 @@ class MoneyService
   #   )
   #
   def payout_to_merchant(data)
+    # convert string keys to symbols
+    data = data.symbolize_keys
+
     # call subledger service, so an merchant payout is automatically account for
     subledger_service.payout_to_merchant(
       data[:transaction_id],
