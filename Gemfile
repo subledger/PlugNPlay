@@ -49,6 +49,9 @@ gem 'bootstrap-sass', '~> 3.0.2.0'
 # API
 gem 'rocket_pants'
 
+# Async processing
+gem 'sidekiq'
+
 # Misc
 gem 'quiet_assets', :group => :development
 

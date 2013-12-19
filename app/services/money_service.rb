@@ -80,6 +80,9 @@ class MoneyService
   #   )
   #
   def payment_successfully_processed(data)
+    # convert string keys to symbols
+    data = data.symbolize_keys
+
     # call subledger service, so a successfull payment is automatically
     # accounted for
     subledger_service.payment_successfully_processed(

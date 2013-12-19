@@ -15,7 +15,7 @@ class Api::V1::EventController < Api::ApplicationController
       end
 
       # call the method
-      money_service.send name, data
+      TriggerWorker.perform_async name, data
       
       # return ok message
       expose :ok

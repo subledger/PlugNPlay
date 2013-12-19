@@ -12,7 +12,7 @@ development:
   adapter: mysql2
   encoding: utf8
   database: PlugNPlay
-  pool: 5
+  pool: 10
   username: root
   password:
   socket: /var/run/mysqld/mysqld.sock
@@ -24,7 +24,7 @@ test:
   adapter: mysql2
   encoding: utf8
   database: PlugNPlay_test
-  pool: 5
+  pool: 10
   username: root
   password:
   socket: /var/run/mysqld/mysqld.sock
@@ -33,7 +33,7 @@ production:
   adapter: mysql2
   encoding: utf8
   database: PlugNPlay_production
-  pool: 5
+  pool: 50
   username: root
   password:
   socket: /var/run/mysqld/mysqld.sock
