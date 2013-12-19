@@ -20,7 +20,7 @@ class AtPayClient
     trigger("payout_to_merchant", {
       'transaction_id'  => transaction_id,
       'merchant_id'     => merchant_id,
-      'purchase_amount' => purchase_amount,
+      'payout_amount'   => payout_amount,
       'reference_url'   => reference_url,
       'description'     => description
     })
