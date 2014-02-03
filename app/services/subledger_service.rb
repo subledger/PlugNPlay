@@ -7,67 +7,113 @@ class SubledgerService
     @subledger ||= Subledger.new(cached_get_setup.slice("key_id", "identity_id", "secret", "org_id", "book_id").symbolize_keys)
   end
 
-  # create the journal entries related to a successfully processed payment:
-  # - debit purchase amount from cash_at_gateway account
-  # - debit merchant amount from merchant account payable
-  # - credit gateway fees on gateway fees account
-  # - credit atpay fees on atpay revenue account
-  def payment_successfully_processed(transaction_id, merchant_id, purchase_amount, merchant_amount, gateway_fees, atpay_fees, reference_url, description)
+  def charge_buyer(transaction_id, purchase_amount, payment_fee, referrer_id, referrer_fee, publisher_id, publisher_fee, distributor_id, distributor_fee, reference_url, description)
     result = subledger.journal_entry.create_and_post(
       effective_at: Time.now,
       description:  description,
       reference:    reference_url,
       lines:        [
         {
-          account: get_cash_at_gateway_account,
+          account: get_granular_escrow_account,
           value: subledger.debit(purchase_amount)
         },
         {
-          account: to_subledger_account_id(merchant_id, :accounts_payable, subledger.credit),
-          value: subledger.credit(merchant_amount)
+          account: get_payment_fees_account,
+          value: subledger.debit(payment_fee)
         },
         {
-          account: get_gateway_fees_account,
-          value: subledger.credit(gateway_fees)
+          account: to_subledger_account_id(referrer_id, :referrer_accounts_payable, subledger.credit),
+          value: subledger.credit(referrer_fee)
         },
         {
-          account: get_atpay_revenue_account,
-          value: subledger.credit(atpay_fees)
+          account: to_subledger_account_id(publisher_id, :publisher_accounts_payable, subledger.credit),
+          value: subledger.credit(publisher_fee)
+        },
+        {
+          account: to_subledger_account_id(distributor_id, :distributor_accounts_payable, subledger.credit),
+          value: subledger.credit(distributor_fee)
+        },
+        {
+          account: get_granular_revenue_account,
+          value: subledger.credit(publisher_fee)
         }
       ]
     )
 
-    # map transaction id
     if transaction_id.present?
-      Mapping.map_entity("transaction::payment_successfully_processed", transaction_id, result.id)
+      Mapping.map_entity("transaction::charge_buyer", transaction_id, result.id)
     end
 
     return result
   end
 
-  # create the journal entries related to a merchant payout:
-  # - credit payout value on cash at bank account
-  # - debit payout value from merchant account
-  def payout_to_merchant(transaction_id, merchant_id, payout_amount, reference_url, description)
+  def payout_referrer(transaction_id, referrer_id, payout_amount, reference_url, description)
     result = subledger.journal_entry.create_and_post(
       effective_at: Time.now,
       description:  description,
       reference:    reference_url,
       lines:        [
         {
-          account: get_cash_at_bank_account,
-          value:   subledger.credit(payout_amount)
+          account: to_subledger_account_id(referrer_id, :referrer_accounts_payable, subledger.credit),
+          value:  subledger.debit(payout_amount)
         },
         {
-          account: to_subledger_account_id(merchant_id, :accounts_payable, subledger.credit),
-          value:  subledger.debit(payout_amount)
+          account: get_granular_escrow_account,
+          value:   subledger.credit(payout_amount)
         }
       ]
     )
 
-    # map transaction id
     if transaction_id.present?
-      Mapping.map_entity("transaction::payout_to_merchant", transaction_id, result.id)
+      Mapping.map_entity("transaction::payout_referrer", transaction_id, result.id)
+    end
+
+    return result
+  end
+
+  def payout_publisher(transaction_id, publisher_id, payout_amount, reference_url, description)
+    result = subledger.journal_entry.create_and_post(
+      effective_at: Time.now,
+      description:  description,
+      reference:    reference_url,
+      lines:        [
+        {
+          account: to_subledger_account_id(publisher_id, :publisher_accounts_payable, subledger.credit),
+          value:  subledger.debit(payout_amount)
+        },
+        {
+          account: get_granular_escrow_account,
+          value:   subledger.credit(payout_amount)
+        }
+      ]
+    )
+
+    if transaction_id.present?
+      Mapping.map_entity("transaction::payout_publisher", transaction_id, result.id)
+    end
+
+    return result
+  end
+
+  def payout_distributor(transaction_id, distributor_id, payout_amount, reference_url, description)
+    result = subledger.journal_entry.create_and_post(
+      effective_at: Time.now,
+      description:  description,
+      reference:    reference_url,
+      lines:        [
+        {
+          account: to_subledger_account_id(distributor_id, :distributor_accounts_payable, subledger.credit),
+          value:  subledger.debit(payout_amount)
+        },
+        {
+          account: get_granular_escrow_account,
+          value:   subledger.credit(payout_amount)
+        }
+      ]
+    )
+
+    if transaction_id.present?
+      Mapping.map_entity("transaction::payout_distributor", transaction_id, result.id)
     end
 
     return result
@@ -84,11 +130,12 @@ class SubledgerService
       "secret"                     => AppConfig.get_value("SUBLEDGER_SECRET"),
       "org_id"                     => AppConfig.get_value("SUBLEDGER_ORG_ID"),
       "book_id"                    => AppConfig.get_value("SUBLEDGER_BOOK_ID"),
-      "cash_at_gateway_account_id" => AppConfig.get_value("SUBLEDGER_CASH_AT_GATEWAY_ACCOUNT_ID"),
-      "gateway_fees_account_id"    => AppConfig.get_value("SUBLEDGER_GATEWAY_FEES_ACCOUNT_ID"),
-      "atpay_revenue_account_id"   => AppConfig.get_value("SUBLEDGER_ATPAY_REVENUE_ACCOUNT_ID"),
-      "cash_at_bank_account_id"    => AppConfig.get_value("SUBLEDGER_CASH_AT_BANK_ACCOUNT_ID"),
-      "ap_category_id"             => AppConfig.get_value("SUBLEDGER_AP_CATEGORY_ID")
+      "granular_escrow_account_id" => AppConfig.get_value("SUBLEDGER_GRANULAR_ESCROW_ACCOUNT_ID"),
+      "granular_revenue_account_id"=> AppConfig.get_value("SUBLEDGER_GRANULAR_REVENUE_ACCOUNT_ID"),
+      "payment_fees_account_id"    => AppConfig.get_value("SUBLEDGER_PAYMENT_FEES__ACCOUNT_ID"),
+      "referrer_ap_category_id"    => AppConfig.get_value("SUBLEDGER_REFERRER_AP_CATEGORY_ID")
+      "publisher_ap_category_id"   => AppConfig.get_value("SUBLEDGER_PUBLISHER_AP_CATEGORY_ID")
+      "distributor_ap_category_id" => AppConfig.get_value("SUBLEDGER_DISTRIBUTOR_AP_CATEGORY_ID")
     }
   end
 
@@ -131,36 +178,29 @@ class SubledgerService
                                book_id:     book.id
 
     # create global accounts
-    cash_at_gateway_account = create_global_account(
-      "Cash At Gateway",
-      "http://www.atpay.com/cash_at_gateway",
-       @subledger.debit
+    granular_escrow_account = create_global_account(
+      "Granular Escrow",
+      "http://getgranular.com/subledger/granular_escrow",
+      @sublddger.debit
     )
 
-    gateway_fees_account = create_global_account(
-      "Gateway Fees",
-      "http://www.atpay.com/gateway_fees",
-      @subledger.debit
+    granular_revenue_account = create_global_account(
+      "Granular Revenue",
+      "http://getgranular.com/subledger/granular_revenue",
+      @sublddger.credit
     )
 
-    atpay_revenue_account = create_global_account(
-      "AtPay Revenue",
-      "http://www.atpay.com/atpay_revenue",
-      @subledger.credit
-    )
-
-    cash_at_bank_account = create_global_account(
-      "Cash at Bank",
-      "http://www.atpay.com/cash_at_bank",
-      @subledger.credit
+    payment_fees_account = create_global_account(
+      "Payment Fees",
+      "http://getgranular.com/subledger/payment_fees",
+      @sublddger.debit
     )
 
     # create report
-    ap_category_id = create_report(
-      cash_at_gateway_account,
-      gateway_fees_account,
-      atpay_revenue_account,
-      cash_at_bank_account
+    referrer_ap_category_id, publisher_ap_category_id, distributor_ap_category_id = create_report(
+      granular_escrow_account,
+      granular_revenue_account,
+      payment_fees_account
     )
 
     # evict own cache
@@ -172,35 +212,40 @@ class SubledgerService
       "SUBLEDGER_SECRET"                     => key.secret,
       "SUBLEDGER_ORG_ID"                     => org.id,
       "SUBLEDGER_BOOK_ID"                    => book.id,
-      "SUBLEDGER_CASH_AT_GATEWAY_ACCOUNT_ID" => cash_at_gateway_account.id,
-      "SUBLEDGER_GATEWAY_FEES_ACCOUNT_ID"    => gateway_fees_account.id,
-      "SUBLEDGER_ATPAY_REVENUE_ACCOUNT_ID"   => atpay_revenue_account.id,
-      "SUBLEDGER_CASH_AT_BANK_ACCOUNT_ID"    => cash_at_bank_account.id,
-      "SUBLEDGER_AP_CATEGORY_ID"             => ap_category_id
+      "SUBLEDGER_GRANULAR_ESCROW_ACCOUNT_ID" => granular_escrow_account.id,
+      "SUBLEDGER_GRANULAR_REVENUE_ACCOUNT_ID"=> granular_revenue_account.id,
+      "SUBLEDGER_PAYMENT_FEES_ACCOUNT_ID"    => payment_fees_account.id,
+      "SUBLEDGER_REFERRER_AP_CATEGORY_ID"    => referrer_ap_category_id,
+      "SUBLEDGER_PUBLISHER_AP_CATEGORY_ID"   => publisher_ap_category_id,
+      "SUBLEDGER_DISTRIBUTOR_AP_CATEGORY_ID" => distributor_ap_category_id,
     }
 
     block_given? ? yield(result) : result
   end
 
 private
-  def get_cash_at_gateway_account
-    @cash_at_gateway_account ||= subledger.accounts.new_or_create(id: cached_get_setup["cash_at_gateway_account_id"])
+  def get_granular_escrow_account
+    @granular_escrow_account ||= subledger.accounts.new_or_create(id: cached_get_setup["granular_escrow_account_id"])
   end
 
-  def get_gateway_fees_account
-    @gatewat_fees_account ||= subledger.accounts.new_or_create(id: cached_get_setup['gateway_fees_account_id'])
+  def get_granular_revenue_account
+    @granular_revenue_account ||= subledger.accounts.new_or_create(id: cached_get_setup['granular_revenue_account_id'])
   end
 
-  def get_atpay_revenue_account
-    @atpay_revenue_account ||= subledger.accounts.new_or_create(id: cached_get_setup['atpay_revenue_account_id'])
+  def get_payment_fees_account
+    @payment_fees_account ||= subledger.accounts.new_or_create(id: cached_get_setup['payment_fees_account_id'])
   end
 
-  def get_cash_at_bank_account
-    @cash_at_bank_account ||= subledger.accounts.new_or_create(id: cached_get_setup['cash_at_bank_account_id'])
+  def get_referrer_ap_category
+    @referrer_ap_category ||= subledger.category.read(id: cached_get_setup['referrer_ap_category_id'])
   end
 
-  def get_ap_category
-    @ap_category ||= subledger.category.read(id: cached_get_setup['ap_category_id'])
+  def get_publisher_ap_category
+    @publisher_ap_category ||= subledger.category.read(id: cached_get_setup['publisher_ap_category_id'])
+  end
+
+  def get_distributor_ap_category
+    @distributor_ap_category ||= subledger.category.read(id: cached_get_setup['distributor_ap_category_id'])
   end
 
   def to_subledger_account_id(third_party_account_id, account_type, normal_balance)
@@ -219,16 +264,18 @@ private
       description: CGI::escape(third_party_account_key),
       normal_balance: normal_balance) do |account|
 
-        puts "aqui"
-
       # update cache and file if this is a new account
       unless Mapping.entity_map_exists?("account", third_party_account_key)
         Mapping.map_entity("account", third_party_account_key, account.id)
 
         # add to report
         case account_type
-        when :accounts_payable
-          get_ap_category.attach account: account
+        when :referrer_accounts_payable
+          get_referrer_ap_category.attach account: account
+        when :publisher_accounts_payable
+          get_publisher_ap_category.attach account: account
+        when :distributor_accounts_payable
+          get_distributor_ap_category.attach account: account
         end
       end
     end
@@ -258,7 +305,7 @@ private
                               normal_balance: normal_balance
   end 
 
-  def create_report(cash_at_gateway_account, gateway_fees_account, atpay_revenue_account, cash_at_bank_account)
+  def create_report(granular_escrow_account, granular_revenue_account, payment_fees_account
     Rails.logger.info "  - Creating Report..."
 
     # create categories
@@ -270,14 +317,6 @@ private
                                                  normal_balance: @subledger.debit,
                                                  version: 1
 
-    liabilities_category = @subledger.categories.create description: 'Liabilities',
-                                                        normal_balance: @subledger.credit,
-                                                        version: 1
-
-    ap_category = @subledger.categories.create description: 'Accounts Payable',
-                                               normal_balance: @subledger.credit,
-                                               version: 1
-
     revenue_category = @subledger.categories.create description: 'Revenue',
                                                     normal_balance: @subledger.credit,
                                                     version: 1
@@ -286,22 +325,42 @@ private
                                                     normal_balance: @subledger.debit,
                                                     version: 1
 
+    liabilities_category = @subledger.categories.create description: 'Liabilities',
+                                                        normal_balance: @subledger.credit,
+                                                        version: 1
+
+    ap_category = @subledger.categories.create description: 'Accounts Payable',
+                                               normal_balance: @subledger.credit,
+                                               version: 1
+
+    referrer_ap_category = @subledger.categories.create
+      description: 'Referrer Accounts Payable',
+      normal_balance: @subledger.credit,
+      version: 1
+
+    publisher_ap_category = @subledger.categories.create
+      description: 'Publisher Accounts Payable',
+      normal_balance: @subledger.credit,
+      version: 1
+
+    distributor_ap_category = @subledger.categories.create
+      description: 'Distributor Accounts Payable',
+      normal_balance: @subledger.credit,
+      version: 1
+
     # attach global accounts to categories
-    cash_category.attach account: cash_at_gateway_account
-    cash_category.attach account: cash_at_bank_account
-
-    revenue_category.attach account: atpay_revenue_account
-
-    expense_category.attach account: gateway_fees_account
+    cash_category.attach    account: granular_escrow_account
+    revenue_category.attach account: granular_revenue_account
+    expense_category.attach account: payment_fees_account
 
     # create the report
     balance_sheet = @subledger.report.create description: 'Chart of Accounts'
 
     # attach categories to report
     balance_sheet.attach category: assets_category
-    balance_sheet.attach category: liabilities_category
     balance_sheet.attach category: revenue_category
     balance_sheet.attach category: expense_category
+    balance_sheet.attach category: liabilities_category
 
     balance_sheet.attach category: cash_category,
                          parent:   assets_category
@@ -309,7 +368,16 @@ private
     balance_sheet.attach category: ap_category,
                          parent:   liabilities_category
 
-    return ap_category.id
+    balance_sheet.attach category: referrer_ap_category,
+                         parent:   ap_category
+
+    balance_sheet.attach category: publisher_ap_category,
+                         parent:   ap_category
+
+    balance_sheet.attach category: distributor_ap_category,
+                         parent:   ap_category
+
+    return [referrer_ap_category.id, publisher_ap_category.id, distributor_ap_category.id]
   end
 
 end

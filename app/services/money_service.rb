@@ -45,22 +45,30 @@ class MoneyService
     }
   end
 
-  # This service method handles hooks for a successfully processed payment
-  # event. Event data should hold the following:
+  # This service method handles hooks for charging a buyer event.
+  # Event data should hold the following:
   #
   # transaction_id: an optional id from atpay, which we will map to subledger
   #                 transaction id
   #
-  # merchant_id: the id that identifies the merchant entity on atpay, which we
-  #              will map to a subledger account_id
-  #
   # purchase_amount: the full purchase value
   #
-  # merchant_amount: value the merchant will receive
+  # payment_fee: the full payment fee
   #
-  # gateway_fees: value the gateway charges
+  # referrer_id: the id that identifies the referrer entity on granular, which we
+  #              will map to a subledger account_id
   #
-  # atpay_fees: value atpay charges
+  # referrer_fee: the fee the referrer charges
+  #
+  # publisher_id: the id that identifies the publisher entity on granular, which we
+  #              will map to a subledger account_id
+  #
+  # publisher_fee: the fee the publisher charges
+  #
+  # distributor_id: the id that identifies the distributor entity on granular, which we
+  #              will map to a subledger account_id
+  #
+  # distributor_fee: the fee the distributor charges
   #
   # reference_url: a url on atpay that identifies this transaction (the transaction 
   #                show page, for example).
@@ -68,42 +76,48 @@ class MoneyService
   # description: text that describes the transaction
   #
   # Example:
-  #   payment_successfully_processed(
+  #   charge_buyer(
   #     transaction_id: "100", // optional
-  #     merchant_id: "merchant1_email@example.com", // doesnt need to be an email
   #     purchase_amount: "100",
-  #     merchant_amount: "80",
-  #     gateway_amount: "10.10",
-  #     atpay_amount: "9.90",
-  #     reference_url: "http://www.atpay.com/transaction/100",
-  #     description: "Brazil vs Argentina Soccer Game"
+  #     payment_fee: "10",
+  #     referrer_id: "referrer1_email@example.com", // doesnt need to be an email
+  #     referrer_amount: "80",
+  #     publisher_id: "referrer1_email@example.com", // doesnt need to be an email
+  #     publisher_amount: "80",
+  #     distributor_id: "referrer1_email@example.com", // doesnt need to be an email
+  #     distributor_amount: "80",
+  #     reference_url: "http://getgranular/transaction/100",
+  #     description: "Purchase (customer@email.com)"
   #   )
   #
-  def payment_successfully_processed(data)
+  def charge_buyer(data)
     # convert string keys to symbols
     data = data.symbolize_keys
 
     # call subledger service, so a successfull payment is automatically
     # accounted for
-    subledger_service.payment_successfully_processed(
+    subledger_service.charge_buyer(
       data[:transaction_id],
-      data[:merchant_id],
       data[:purchase_amount],
-      data[:merchant_amount],
-      data[:gateway_fees],
-      data[:atpay_fees],
+      data[:payment_fee],
+      data[:referrer_id],
+      data[:referrer_amount],
+      data[:publisher_id],
+      data[:publisher_amount],
+      data[:distributor_id],
+      data[:distributor_amount],
       data[:reference_url],
       data[:description]
     )
   end
 
-  # This service method handles hooks for when a payout for a merchant is made.
+  # This service method handles hooks for when a payout for a referrer is made.
   # Event data should hold the following:
   #
   # transaction_id: an optional id from atpay, which we will map to subledger
   #                 transaction id
   #
-  # merchant_id: the id that identifies the merchant entity on atpay, which we
+  # referrer_id: the id that identifies the referrer entity on granular, which we
   #              will map to a subledger account_id
   #
   # payout_amount: the full payout value
@@ -113,22 +127,98 @@ class MoneyService
   # description: text that describes the transaction
   #
   # Example:
-  #   payout_to_merchant(
+  #   payout_referrer(
   #     transaction_id: "16", // optional
-  #     merchant_id: "merchant1_email@example.com", // doesnt need to be an email
+  #     referrer_id: "referrer1_email@example.com", // doesnt need to be an email
   #     payout_amount: "160",
-  #     reference_url: "http://www.atpay.com/merchant/1/payout/16",
+  #     reference_url: "http://getgranular.com/referrer/1/payout/16",
   #     description: "January 2014 Payout"
   #   )
   #
-  def payout_to_merchant(data)
+  def payout_referrer(data)
     # convert string keys to symbols
     data = data.symbolize_keys
 
     # call subledger service, so an merchant payout is automatically account for
-    subledger_service.payout_to_merchant(
+    subledger_service.payout_referrer(
       data[:transaction_id],
-      data[:merchant_id],
+      data[:referrer_id],
+      data[:payout_amount],
+      data[:reference_url],
+      data[:description]
+    )
+  end
+
+  # This service method handles hooks for when a payout for a publisher is made.
+  # Event data should hold the following:
+  #
+  # transaction_id: an optional id from atpay, which we will map to subledger
+  #                 transaction id
+  #
+  # publisher_id: the id that identifies the publisher entity on granular, which we
+  #              will map to a subledger account_id
+  #
+  # payout_amount: the full payout value
+  #
+  # reference_url: a url on atpay that identifies this transaction
+  #
+  # description: text that describes the transaction
+  #
+  # Example:
+  #   payout_referrer(
+  #     transaction_id: "16", // optional
+  #     publisher_id: "publisher1_email@example.com", // doesnt need to be an email
+  #     payout_amount: "160",
+  #     reference_url: "http://getgranular.com/publisher/1/payout/16",
+  #     description: "January 2014 Payout"
+  #   )
+  #
+  def payout_publisher(data)
+    # convert string keys to symbols
+    data = data.symbolize_keys
+
+    # call subledger service, so an merchant payout is automatically account for
+    subledger_service.payout_publisher(
+      data[:transaction_id],
+      data[:publisher_id],
+      data[:payout_amount],
+      data[:reference_url],
+      data[:description]
+    )
+  end
+
+  # This service method handles hooks for when a payout for a distributor is made.
+  # Event data should hold the following:
+  #
+  # transaction_id: an optional id from atpay, which we will map to subledger
+  #                 transaction id
+  #
+  # distributor_id: the id that identifies the referrer entity on granular, which we
+  #              will map to a subledger account_id
+  #
+  # payout_amount: the full payout value
+  #
+  # reference_url: a url on atpay that identifies this transaction
+  #
+  # description: text that describes the transaction
+  #
+  # Example:
+  #   payout_referrer(
+  #     transaction_id: "16", // optional
+  #     distributor_id: "distributor1_email@example.com", // doesnt need to be an email
+  #     payout_amount: "160",
+  #     reference_url: "http://getgranular.com/distributor/1/payout/16",
+  #     description: "January 2014 Payout"
+  #   )
+  #
+  def payout_distributor(data)
+    # convert string keys to symbols
+    data = data.symbolize_keys
+
+    # call subledger service, so an merchant payout is automatically account for
+    subledger_service.payout_distributor(
+      data[:transaction_id],
+      data[:distributor_id],
       data[:payout_amount],
       data[:reference_url],
       data[:description]
