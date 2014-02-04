@@ -1,0 +1,60 @@
+<h1>Simulate Charging a Buyer</h1>
+
+<%= form_for :charge, url: charge_buyer_path do |f| %>
+  <div class="form-group">
+    <%= f.label :transaction_id %>
+    <%= f.text_field :transaction_id, class: "form-control", placeholder: "Ex: 1", autofocus: true %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :purchase_amount %>
+    <%= f.text_field :purchase_amount, class: "form-control", placeholder: "Ex: 100", required: true %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :payment_fee %>
+    <%= f.text_field :payment_fee, class: "form-control", placeholder: "Ex: 10", required: true %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :referrer_id %>
+    <%= f.text_field :referrer_id, class: "form-control", placeholder: "Ex: referrer1@test.com", required: true %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :referrer_amount %>
+    <%= f.text_field :referrer_amount, class: "form-control", placeholder: "Ex: 70", required: true %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :publisher_id %>
+    <%= f.text_field :publisher_id, class: "form-control", placeholder: "Ex: publisher1@test.com", required: true %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :publisher_amount %>
+    <%= f.text_field :publisher_amount, class: "form-control", placeholder: "Ex: 10", required: true %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :distributor_id %>
+    <%= f.text_field :distributor_id, class: "form-control", placeholder: "Ex: distributor1@test.com", required: true %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :distributor_amount %>
+    <%= f.text_field :distributor_amount, class: "form-control", placeholder: "Ex: 10", required: true %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :description %>
+    <%= f.text_field :description, class: "form-control", placeholder: "Ex: Purchase (customer@email.com)" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :reference_url %>
+    <%= f.url_field :reference_url, class: "form-control", placeholder: "Ex: http://getgranular.com/transaction/100", required: true %>
+  </div>
+  
+  <%= f.submit "Charge", class: "btn btn-default" %>
+<% end %>

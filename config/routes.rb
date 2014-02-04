@@ -7,10 +7,14 @@ PlugNPlay::Application.routes.draw do
 
   resource :setup, only: [:new, :create, :show]
 
-  get  "simulate/purchase"
-  post "simulate/pay"
-  get  "simulate/merchant_payout"
-  post "simulate/payout"
+  get  "simulate/simulate_charge_buyer", as: :simulate_charge_buyer
+  post "simulate/charge_buyer", as: :charge_buyer
+  get  "simulate/simulate_payout_referrer", as: :simulate_payout_referrer
+  post "simulate/payout_referrer", as: :payout_referrer
+  get  "simulate/simulate_payout_publisher", as: :simulate_payout_publisher
+  post "simulate/payout_publisher", as: :payout_publisher
+  get  "simulate/simulate_payout_distributor", as: :simulate_payout_distributor
+  post "simulate/payout_distributor", as: :payout_distributor
 
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".

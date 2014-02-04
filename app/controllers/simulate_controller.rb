@@ -1,49 +1,76 @@
 class SimulateController < ApplicationController
-  def purchase
+  def simulate_charge_buyer
   end
 
-  def pay
-    purchase = params[:purchase]
+  def charge_buyer
+    charge = params[:charge]
 
-    purchase_amount = BigDecimal.new(purchase[:amount])
-    gateway_fees = purchase_amount * gateway_fee_rate
-    atpay_fees = purchase_amount * atpay_fee_rate
-    merchant_amount = purchase_amount - gateway_fees - atpay_fees
+    purchase_amount    = BigDecimal.new(charge[:purchase_amount])
+    payment_fee        = BigDecimal.new(charge[:payment_fee])
+    referrer_amount    = BigDecimal.new(charge[:referrer_amount])
+    publisher_amount   = BigDecimal.new(charge[:publisher_amount])
+    distributor_amount = BigDecimal.new(charge[:distributor_amount])
 
-    money_service.payment_successfully_processed(
-      transaction_id: purchase[:transaction_id],
-      merchant_id: purchase[:merchant_id],
+    money_service.charge_buyer(
+      transaction_id: charge[:transaction_id],
       purchase_amount: purchase_amount,
-      merchant_amount: merchant_amount,
-      gateway_fees: gateway_fees,
-      atpay_fees: atpay_fees,
-      reference_url: purchase[:reference_url],
-      description: purchase[:description]
+      payment_fee: payment_fee,
+      referrer_id: charge[:referrer_id],
+      referrer_amount: referrer_amount,
+      publisher_id: charge[:publisher_id],
+      publisher_amount: publisher_amount,
+      distributor_id: charge[:distributor_id],
+      distributor_amount: distributor_amount,
+      reference_url: charge[:reference_url],
+      description: charge[:description]
     )
   end
 
-  def merchant_payout
+  def simulate_payout_referrer
   end
 
-  def payout
+  def payout_referrer
     payout = params[:payout]
-    payout_amount = BigDecimal.new(payout[:amount])
+    payout_amount = BigDecimal.new(payout[:payout_amount])
 
-    money_service.payout_to_merchant(
+    money_service.payout_referrer(
       transaction_id: payout[:transaction_id],
-      merchant_id: payout[:merchant_id],
+      referrer_id: payout[:referrer_id],
       payout_amount: payout_amount,
       reference_url: payout[:reference_url],
       description: payout[:description]
     )
   end
 
-private
-  def gateway_fee_rate
-    0.2
+  def simulate_payout_publisher
   end
 
-  def atpay_fee_rate
-    0.1
+  def payout_publisher
+    payout = params[:payout]
+    payout_amount = BigDecimal.new(payout[:payout_amount])
+
+    money_service.payout_publisher(
+      transaction_id: payout[:transaction_id],
+      publisher_id: payout[:publisher_id],
+      payout_amount: payout_amount,
+      reference_url: payout[:reference_url],
+      description: payout[:description]
+    )
+  end
+
+  def simulate_payout_distributor
+  end
+
+  def payout_distributor
+    payout = params[:payout]
+    payout_amount = BigDecimal.new(payout[:payout_amount])
+
+    money_service.payout_distributor(
+      transaction_id: payout[:transaction_id],
+      distributor_id: payout[:distributor_id],
+      payout_amount: payout_amount,
+      reference_url: payout[:reference_url],
+      description: payout[:description]
+    )
   end
 end

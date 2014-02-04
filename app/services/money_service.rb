@@ -81,12 +81,12 @@ class MoneyService
   #     purchase_amount: "100",
   #     payment_fee: "10",
   #     referrer_id: "referrer1_email@example.com", // doesnt need to be an email
-  #     referrer_amount: "80",
-  #     publisher_id: "referrer1_email@example.com", // doesnt need to be an email
-  #     publisher_amount: "80",
-  #     distributor_id: "referrer1_email@example.com", // doesnt need to be an email
-  #     distributor_amount: "80",
-  #     reference_url: "http://getgranular/transaction/100",
+  #     referrer_amount: "70",
+  #     publisher_id: "publisher1_email@example.com", // doesnt need to be an email
+  #     publisher_amount: "10",
+  #     distributor_id: "distributor1_email@example.com", // doesnt need to be an email
+  #     distributor_amount: "10",
+  #     reference_url: "http://getgranular.com/transaction/100",
   #     description: "Purchase (customer@email.com)"
   #   )
   #

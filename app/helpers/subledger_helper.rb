@@ -1,6 +1,6 @@
 module SubledgerHelper
   def subledger_app_link
-   "<a href='http://subledger.com/app' target='_blank'>Open Subledger App</a>".html_safe
+   "<a href='https://app.subledger.com' target='_blank'>Open Subledger App</a>".html_safe
   end
 
 private

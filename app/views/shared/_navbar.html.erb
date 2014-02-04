@@ -7,15 +7,21 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="/">PlugNPlay Integration</a>
+      <a class="navbar-brand" href="/">Subledger PlugNPlay</a>
     </div>
     <div class="collapse navbar-collapse">
       <ul class="nav navbar-nav">
-        <li class="<%= 'active' if ['purchase', 'pay'].include?(action_name) %>">
-          <%= link_to "Simulate Purchase", simulate_purchase_path %>
+        <li class="<%= 'active' if ['simulate_charge_buyer', 'charge_buyer'].include?(action_name) %>">
+          <%= link_to "Simulate Charge Buyer", simulate_charge_buyer_path %>
         </li>
-        <li class="<%= 'active' if ['merchant_payout', 'payout'].include?(action_name) %>">
-          <%= link_to "Simulate Merchant Payout", simulate_merchant_payout_path %>
+        <li class="<%= 'active' if ['simulate_payout_referrer', 'payout_referrer'].include?(action_name) %>">
+          <%= link_to "Simulate Payout Referrer", simulate_payout_referrer_path %>
+        </li>
+        <li class="<%= 'active' if ['simulate_payout_publisher', 'payout_publisher'].include?(action_name) %>">
+          <%= link_to "Simulate Payout Publisher", simulate_payout_publisher_path %>
+        </li>
+        <li class="<%= 'active' if ['simulate_payout_distributor', 'payout_distributor'].include?(action_name) %>">
+          <%= link_to "Simulate Payout Distributor", simulate_payout_distributor_path %>
         </li>
         <!--
         <li class="dropdown">

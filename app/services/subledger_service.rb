@@ -132,9 +132,9 @@ class SubledgerService
       "book_id"                    => AppConfig.get_value("SUBLEDGER_BOOK_ID"),
       "granular_escrow_account_id" => AppConfig.get_value("SUBLEDGER_GRANULAR_ESCROW_ACCOUNT_ID"),
       "granular_revenue_account_id"=> AppConfig.get_value("SUBLEDGER_GRANULAR_REVENUE_ACCOUNT_ID"),
-      "payment_fees_account_id"    => AppConfig.get_value("SUBLEDGER_PAYMENT_FEES__ACCOUNT_ID"),
-      "referrer_ap_category_id"    => AppConfig.get_value("SUBLEDGER_REFERRER_AP_CATEGORY_ID")
-      "publisher_ap_category_id"   => AppConfig.get_value("SUBLEDGER_PUBLISHER_AP_CATEGORY_ID")
+      "payment_fees_account_id"    => AppConfig.get_value("SUBLEDGER_PAYMENT_FEES_ACCOUNT_ID"),
+      "referrer_ap_category_id"    => AppConfig.get_value("SUBLEDGER_REFERRER_AP_CATEGORY_ID"),
+      "publisher_ap_category_id"   => AppConfig.get_value("SUBLEDGER_PUBLISHER_AP_CATEGORY_ID"),
       "distributor_ap_category_id" => AppConfig.get_value("SUBLEDGER_DISTRIBUTOR_AP_CATEGORY_ID")
     }
   end
@@ -181,19 +181,19 @@ class SubledgerService
     granular_escrow_account = create_global_account(
       "Granular Escrow",
       "http://getgranular.com/subledger/granular_escrow",
-      @sublddger.debit
+      @subledger.debit
     )
 
     granular_revenue_account = create_global_account(
       "Granular Revenue",
       "http://getgranular.com/subledger/granular_revenue",
-      @sublddger.credit
+      @subledger.credit
     )
 
     payment_fees_account = create_global_account(
       "Payment Fees",
       "http://getgranular.com/subledger/payment_fees",
-      @sublddger.debit
+      @subledger.debit
     )
 
     # create report
@@ -305,7 +305,7 @@ private
                               normal_balance: normal_balance
   end 
 
-  def create_report(granular_escrow_account, granular_revenue_account, payment_fees_account
+  def create_report(granular_escrow_account, granular_revenue_account, payment_fees_account)
     Rails.logger.info "  - Creating Report..."
 
     # create categories
@@ -333,20 +333,17 @@ private
                                                normal_balance: @subledger.credit,
                                                version: 1
 
-    referrer_ap_category = @subledger.categories.create
-      description: 'Referrer Accounts Payable',
-      normal_balance: @subledger.credit,
-      version: 1
+    referrer_ap_category = @subledger.categories.create description: 'Referrer Accounts Payable',
+                                                        normal_balance: @subledger.credit,
+                                                        version: 1
 
-    publisher_ap_category = @subledger.categories.create
-      description: 'Publisher Accounts Payable',
-      normal_balance: @subledger.credit,
-      version: 1
+    publisher_ap_category = @subledger.categories.create description: 'Publisher Accounts Payable',
+                                                         normal_balance: @subledger.credit,
+                                                         version: 1
 
-    distributor_ap_category = @subledger.categories.create
-      description: 'Distributor Accounts Payable',
-      normal_balance: @subledger.credit,
-      version: 1
+    distributor_ap_category = @subledger.categories.create description: 'Distributor Accounts Payable',
+                                                           normal_balance: @subledger.credit,
+                                                           version: 1
 
     # attach global accounts to categories
     cash_category.attach    account: granular_escrow_account
