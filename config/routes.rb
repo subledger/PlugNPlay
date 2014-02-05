@@ -7,8 +7,10 @@ PlugNPlay::Application.routes.draw do
 
   resource :setup, only: [:new, :create, :show]
 
-  get  "simulate/simulate_charge_buyer", as: :simulate_charge_buyer
-  post "simulate/charge_buyer", as: :charge_buyer
+  get  "simulate/simulate_goods_sold", as: :simulate_goods_sold
+  post "simulate/goods_sold", as: :goods_sold
+  get  "simulate/simulate_card_charge_success", as: :simulate_card_charge_success
+  post "simulate/card_charge_success", as: :card_charge_success
   get  "simulate/simulate_payout_referrer", as: :simulate_payout_referrer
   post "simulate/payout_referrer", as: :payout_referrer
   get  "simulate/simulate_payout_publisher", as: :simulate_payout_publisher

@@ -1,26 +1,44 @@
 class SimulateController < ApplicationController
-  def simulate_charge_buyer
+  def simulate_goods_sold
   end
 
-  def charge_buyer
+  def goods_sold
+    sold = params[:sold]
+
+    purchase_amount    = BigDecimal.new(sold[:purchase_amount])
+    referrer_amount    = BigDecimal.new(sold[:referrer_amount])
+    publisher_amount   = BigDecimal.new(sold[:publisher_amount])
+    distributor_amount = BigDecimal.new(sold[:distributor_amount])
+
+    money_service.goods_sold(
+      transaction_id: sold[:transaction_id],
+      buyer_id: sold[:buyer_id],
+      purchase_amount: purchase_amount,
+      referrer_id: sold[:referrer_id],
+      referrer_amount: referrer_amount,
+      publisher_id: sold[:publisher_id],
+      publisher_amount: publisher_amount,
+      distributor_id: sold[:distributor_id],
+      distributor_amount: distributor_amount,
+      reference_url: sold[:reference_url],
+      description: sold[:description]
+    )
+  end
+
+  def simulate_card_charge_success
+  end
+
+  def card_charge_success
     charge = params[:charge]
 
     purchase_amount    = BigDecimal.new(charge[:purchase_amount])
     payment_fee        = BigDecimal.new(charge[:payment_fee])
-    referrer_amount    = BigDecimal.new(charge[:referrer_amount])
-    publisher_amount   = BigDecimal.new(charge[:publisher_amount])
-    distributor_amount = BigDecimal.new(charge[:distributor_amount])
 
-    money_service.charge_buyer(
+    money_service.card_charge_success(
       transaction_id: charge[:transaction_id],
+      buyer_id: charge[:buyer_id],
       purchase_amount: purchase_amount,
       payment_fee: payment_fee,
-      referrer_id: charge[:referrer_id],
-      referrer_amount: referrer_amount,
-      publisher_id: charge[:publisher_id],
-      publisher_amount: publisher_amount,
-      distributor_id: charge[:distributor_id],
-      distributor_amount: distributor_amount,
       reference_url: charge[:reference_url],
       description: charge[:description]
     )

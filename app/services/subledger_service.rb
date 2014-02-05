@@ -7,19 +7,17 @@ class SubledgerService
     @subledger ||= Subledger.new(cached_get_setup.slice("key_id", "identity_id", "secret", "org_id", "book_id").symbolize_keys)
   end
 
-  def charge_buyer(transaction_id, purchase_amount, payment_fee, referrer_id, referrer_fee, publisher_id, publisher_fee, distributor_id, distributor_fee, reference_url, description)
+  def goods_sold(transaction_id, buyer_id, purchase_amount, referrer_id, referrer_fee, publisher_id, publisher_fee, distributor_id, distributor_fee, reference_url, description)
+    granular_revenue = purchase_amount - referrer_fee - publisher_fee - distributor_fee
+
     result = subledger.journal_entry.create_and_post(
       effective_at: Time.now,
       description:  description,
       reference:    reference_url,
       lines:        [
         {
-          account: get_granular_escrow_account,
+          account: to_subledger_account_id(buyer_id, :buyer_accounts_receivable, subledger.debit),
           value: subledger.debit(purchase_amount)
-        },
-        {
-          account: get_payment_fees_account,
-          value: subledger.debit(payment_fee)
         },
         {
           account: to_subledger_account_id(referrer_id, :referrer_accounts_payable, subledger.credit),
@@ -35,13 +33,43 @@ class SubledgerService
         },
         {
           account: get_granular_revenue_account,
-          value: subledger.credit(publisher_fee)
+          value: subledger.credit(granular_revenue)
         }
       ]
     )
 
     if transaction_id.present?
-      Mapping.map_entity("transaction::charge_buyer", transaction_id, result.id)
+      Mapping.map_entity("transaction::goods_sold", transaction_id, result.id)
+    end
+
+    return result
+  end
+
+  def card_charge_success(transaction_id, buyer_id, purchase_amount, payment_fee, reference_url, description)
+    remainder = purchase_amount - payment_fee
+
+    result = subledger.journal_entry.create_and_post(
+      effective_at: Time.now,
+      description:  description,
+      reference:    reference_url,
+      lines:        [
+        {
+          account: to_subledger_account_id(buyer_id, :buyer_accounts_receivable, subledger.debit),
+          value: subledger.credit(purchase_amount)
+        },
+        {
+          account: get_payment_fees_account,
+          value: subledger.debit(payment_fee)
+        },
+        {
+          account: get_granular_escrow_account,
+          value: subledger.debit(remainder)
+        }
+      ]
+    )
+
+    if transaction_id.present?
+      Mapping.map_entity("transaction::card_charge_success", transaction_id, result.id)
     end
 
     return result
@@ -133,6 +161,7 @@ class SubledgerService
       "granular_escrow_account_id" => AppConfig.get_value("SUBLEDGER_GRANULAR_ESCROW_ACCOUNT_ID"),
       "granular_revenue_account_id"=> AppConfig.get_value("SUBLEDGER_GRANULAR_REVENUE_ACCOUNT_ID"),
       "payment_fees_account_id"    => AppConfig.get_value("SUBLEDGER_PAYMENT_FEES_ACCOUNT_ID"),
+      "cash_category_id"           => AppConfig.get_value("SUBLEDGER_CASH_CATEGORY_ID"),
       "referrer_ap_category_id"    => AppConfig.get_value("SUBLEDGER_REFERRER_AP_CATEGORY_ID"),
       "publisher_ap_category_id"   => AppConfig.get_value("SUBLEDGER_PUBLISHER_AP_CATEGORY_ID"),
       "distributor_ap_category_id" => AppConfig.get_value("SUBLEDGER_DISTRIBUTOR_AP_CATEGORY_ID")
@@ -197,7 +226,7 @@ class SubledgerService
     )
 
     # create report
-    referrer_ap_category_id, publisher_ap_category_id, distributor_ap_category_id = create_report(
+    cash_category_id, referrer_ap_category_id, publisher_ap_category_id, distributor_ap_category_id = create_report(
       granular_escrow_account,
       granular_revenue_account,
       payment_fees_account
@@ -215,6 +244,7 @@ class SubledgerService
       "SUBLEDGER_GRANULAR_ESCROW_ACCOUNT_ID" => granular_escrow_account.id,
       "SUBLEDGER_GRANULAR_REVENUE_ACCOUNT_ID"=> granular_revenue_account.id,
       "SUBLEDGER_PAYMENT_FEES_ACCOUNT_ID"    => payment_fees_account.id,
+      "SUBLEDGER_CASH_CATEGORY_ID"           => cash_category_id,
       "SUBLEDGER_REFERRER_AP_CATEGORY_ID"    => referrer_ap_category_id,
       "SUBLEDGER_PUBLISHER_AP_CATEGORY_ID"   => publisher_ap_category_id,
       "SUBLEDGER_DISTRIBUTOR_AP_CATEGORY_ID" => distributor_ap_category_id,
@@ -234,6 +264,10 @@ private
 
   def get_payment_fees_account
     @payment_fees_account ||= subledger.accounts.new_or_create(id: cached_get_setup['payment_fees_account_id'])
+  end
+
+  def get_cash_category
+    @cash_category ||= subledger.category.read(id: cached_get_setup['cash_category_id'])
   end
 
   def get_referrer_ap_category
@@ -270,6 +304,8 @@ private
 
         # add to report
         case account_type
+        when :buyer_accounts_receivable
+          get_cash_category.attach account: account
         when :referrer_accounts_payable
           get_referrer_ap_category.attach account: account
         when :publisher_accounts_payable
@@ -374,7 +410,7 @@ private
     balance_sheet.attach category: distributor_ap_category,
                          parent:   ap_category
 
-    return [referrer_ap_category.id, publisher_ap_category.id, distributor_ap_category.id]
+    return [cash_category.id, referrer_ap_category.id, publisher_ap_category.id, distributor_ap_category.id]
   end
 
 end

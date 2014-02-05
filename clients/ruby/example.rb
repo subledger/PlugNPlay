@@ -1,11 +1,62 @@
-require_relative 'granular_client'
+require_relative 'plug_n_play/client'
 
-client = GranularClient.new('http://localhost:3000', "pnp", "password")
+client = PlugNPlay::Client.new("http://localhost:3000", "pnp", "password")
+transaction_id = ARGV[0]
 
-#puts client.charge_buyer(100, '100', '10', 'referrer1@test.com', '80', 'publisher1@test.com', '10', 'distributor1@test.com', '10', 'http://testingapi.com/100', 'API Client Charge Buyer 100')
+if ARGV.length < 1
+  puts "Need transaction id"
+  puts "ex: ruby example.rb 100"
+  exit
+end
 
-#puts client.payout_referrer(200, 'referrer1@test.com', '80', 'http://testingapi.com/200', 'API Client Payout Referrer 200')
+puts "* Goods Sold"
+puts client.goods_sold(
+  transaction_id: transaction_id,
+  buyer_id: "buyer1@test.com",
+  purchase_amount: "100",
+  referrer_id: "referrer1@test.com",
+  referrer_amount: "25",
+  publisher_id: "publisher1@test.com",
+  publisher_amount: "25",
+  distributor_id: "distributor1@test.com",
+  distributor_amount: "25",
+  reference_url: "http://testingapi.com/#{transaction_id}",
+  description: "API Ruby Client Goods Sold #{transaction_id}"
+)
 
-#puts client.payout_publisher(300, 'publisher1@test.com', '10', 'http://testingapi.com/300', 'API Client Payout Publisher 300')
+puts "* Card Charge Success"
+puts client.card_charge_success(
+  transaction_id: transaction_id,
+  buyer_id: "buyer1@test.com",
+  purchase_amount: "100",
+  payment_fee: "10",
+  reference_url: "http://testingapi.com/#{transaction_id}",
+  description: "API Ruby Client Card Charge Success #{transaction_id}"
+)
 
-puts client.payout_distributor(400, 'distributor1@test.com', '10', 'http://testingapi.com/400', 'API Client Payout Distributor 400')
+puts "Payout Referrer"
+puts client.payout_referrer(
+  transaction_id: transaction_id,
+  referrer_id: "referrer1@test.com",
+  payout_amount: "25",
+  reference_url: "http://testingapi.com/#{transaction_id}",
+  description: "API Ruby Client Payout Referrer #{transaction_id}"
+)
+
+puts "* Payout Publisher"
+puts client.payout_publisher(
+  transaction_id: transaction_id,
+  publisher_id: "publisher1@test.com",
+  payout_amount: "25",
+  reference_url: "http://testingapi.com/#{transaction_id}",
+  description: "API Ruby Client Payout Publisher #{transaction_id}"
+)
+
+puts "* Payout Distributor"
+puts client.payout_distributor(
+  transaction_id: transaction_id,
+  distributor_id: "distributor1@test.com",
+  payout_amount: "25",
+  reference_url: "http://testingapi.com/#{transaction_id}",
+  description: "API Ruby Client Payout Distributor #{transaction_id}"
+)
