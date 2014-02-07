@@ -16,6 +16,7 @@
 /tmp
 *.swp
 *.pyc
+*.sql
 
 config/subledger_accounts_mapping.yml
 config/creds

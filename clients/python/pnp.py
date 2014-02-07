@@ -27,5 +27,11 @@ class Client:
 
   def __getattr__(self, name):
     def _missing(*args, **kwargs):
-      return self.trigger(name, kwargs)
+      if name.startswith("payout_"):
+          kwargs["account_role"] = name[7:]
+          return self.trigger("payout", kwargs)
+
+      else:
+        return self.trigger(name, kwargs)
+
     return _missing
