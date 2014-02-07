@@ -18,10 +18,6 @@ host = 'http://localhost:3000'
 user = 'pnp'
 pswd = 'password'
 
-#host = 'http://integration.subledger.com:82'
-#user = 'granular'
-#pswd = 'kG1O7W0Gl6A8PA4T'
-
 def goods_sold(client,transaction_id):
   print "* Goods Sold"
   print client.goods_sold(
