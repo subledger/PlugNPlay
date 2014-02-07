@@ -27,7 +27,12 @@ module PlugNPlay
     end
 
     def method_missing(method, *args)
-      self.trigger(method, args[0])
+      if method.to_s.start_with? "payout_"
+        args[0][:account_role] = method[7..-1]
+        self.trigger("payout", args[0])
+      else
+        self.trigger(method, args[0])
+      end
     end
   end
 end
