@@ -107,9 +107,9 @@ def main(href,user,pswd,transaction_id):
     client = pnp.Client(href,user,pswd)
 
     # call the predefined methods
-    #goods_sold(client,transaction_id)
-    #charge_success(client,transaction_id)
-    #payout_referrer(client,transaction_id)
+    goods_sold(client,transaction_id)
+    charge_success(client,transaction_id)
+    payout_referrer(client,transaction_id)
     payout_publisher(client,transaction_id)
     payout_distributor(client,transaction_id)
     payout_government(client,transaction_id)
