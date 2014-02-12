@@ -57,4 +57,4 @@ gem 'quiet_assets', :group => :development
 
 # Subledger Gem
 source 'https://boocx:i9JHYGcWC9zjtw06@gems.boocx.com'
-gem 'subledger', '~> 0.7.2'
+gem 'subledger'

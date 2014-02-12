@@ -20,6 +20,10 @@ module PlugNPlay
     # config.i18n.load_path += Dir[Rails.root.join('my', 'locales', '*.{rb,yml}').to_s]
     # config.i18n.default_locale = :de
 
+    # Autoload services
+    config.autoload_paths += %W(#{config.root}/app/services/concerns)
+    config.autoload_paths += %W(#{config.root}/app/services)
+
     # Cache configuration
     config.cache_store = :memory_store, { size: 4.megabytes }
 

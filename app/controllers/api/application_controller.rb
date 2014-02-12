@@ -6,13 +6,17 @@ class Api::ApplicationController < RocketPants::Base
   before_filter :check_app_ready
 
 protected
-  def money_service
-    @money_service ||= MoneyService.new
+  def setup_service
+    @setup_service ||= SetupService.new
+  end
+
+  def subledger_service
+    @subledger_service ||= SubledgerService.new
   end
 
 private
   def check_app_ready
-    unless money_service.cached_setup_ready?
+    unless setup_service.setup_ready?
       error! :unknown, metadata: { error_message: "API app is not correctly configured yet" }
     end
   end

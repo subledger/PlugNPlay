@@ -6,8 +6,8 @@ class SetupsController < ApplicationController
     setup = params[:setup]
 
     begin
-      @setup = money_service.initial_setup(setup)
-      render action: :show
+      setup_service.initial_setup(setup)
+      redirect_to action: 'show', notice: "PnP Configured Successfully"
 
     rescue Exception => e
       logger.error e.backtrace
@@ -18,7 +18,7 @@ class SetupsController < ApplicationController
   end
 
   def show
-    @setup = money_service.cached_get_setup
+    @setup = setup_service.get_setup
   end
 
 private

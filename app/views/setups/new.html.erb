@@ -9,27 +9,25 @@
   <fieldset>
     <legend>Subledger Config</legend>
 
-    <%= f.fields_for :subledger do |s| %>
-      <div class="form-group">
-        <%= s.label :email %>
-        <%= s.text_field :email, class: "form-control", placeholder: "Ex: email@domain.com.br", autofocus: true, required: true %>
-      </div>
+    <div class="form-group">
+      <%= f.label :email %>
+      <%= f.text_field :email, class: "form-control", placeholder: "Ex: email@domain.com.br", autofocus: true, required: true %>
+    </div>
 
-      <div class="form-group">
-        <%= s.label :identity_desc %>
-        <%= s.text_field :identity_desc, class: "form-control", placeholder: "Ex: Test App", required: true%>
-      </div>
+    <div class="form-group">
+      <%= f.label :identity_desc %>
+      <%= f.text_field :identity_desc, class: "form-control", placeholder: "Ex: Test App", required: true%>
+    </div>
 
-      <div class="form-group">
-        <%= s.label :org_desc %>
-        <%= s.text_field :org_desc, class: "form-control", placeholder: "Ex: Test Org", required: true %>
-      </div>
+    <div class="form-group">
+      <%= f.label :org_desc %>
+      <%= f.text_field :org_desc, class: "form-control", placeholder: "Ex: Test Org", required: true %>
+    </div>
 
-      <div class="form-group">
-        <%= s.label :book_desc %>
-        <%= s.text_field :book_desc, class: "form-control", placeholder: "Ex: Test Book" %>
-      </div>
-    <% end %>
+    <div class="form-group">
+      <%= f.label :book_desc %>
+      <%= f.text_field :book_desc, class: "form-control", placeholder: "Ex: Test Book" %>
+    </div>
   </fieldset>
 
   <%= f.submit "Setup", class: "btn btn-default" %>

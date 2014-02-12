@@ -16,7 +16,7 @@ import pnp
 
 host = 'http://localhost:3000'
 user = 'pnp'
-pswd = 'password'
+pswd = 'pnp'
 
 def goods_sold(client,transaction_id):
   print "* Goods Sold"

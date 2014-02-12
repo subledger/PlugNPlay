@@ -10,7 +10,7 @@ class Api::V1::EventController < Api::ApplicationController
       data = params[:data]
 
       # check if method exists
-      unless money_service.respond_to? name
+      unless subledger_service.respond_to? name
         error! :not_found
       end
 

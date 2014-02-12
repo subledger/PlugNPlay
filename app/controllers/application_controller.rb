@@ -10,14 +10,18 @@ class ApplicationController < ActionController::Base
   before_filter :check_app_ready
 
 protected
-  def money_service
-    @money_service ||= MoneyService.new
+  def setup_service
+    @setup_service ||= SetupService.new
+  end
+
+  def subledger_service
+    @subledger_service ||= SubledgerService.new
   end
 
 private
   def check_app_ready
     if not (controller_name == "setups" and ["new", "create"].include?(action_name)) and
-       not money_service.cached_setup_ready?
+       not setup_service.setup_ready?
 
       redirect_to new_setup_path
     end
@@ -35,5 +39,4 @@ private
       end
     end
   end
-
 end
