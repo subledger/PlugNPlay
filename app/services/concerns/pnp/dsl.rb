@@ -124,7 +124,7 @@ module Pnp
 
         else
           # prepare category data
-          data = { description: "Category #{id.to_s.humanize}", version: 1 }
+          data = { description: id.to_s.humanize, version: 1 }
           data = data.merge config.slice(:description, :normal_balance, :version)
 
           Rails.logger.info data

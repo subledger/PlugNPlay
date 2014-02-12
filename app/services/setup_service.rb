@@ -140,7 +140,6 @@ class SetupService < ApplicationService
     global_accounts = []
     global_accounts << global_account(:escrow      , normal_balance: debit )
     global_accounts << global_account(:revenue     , normal_balance: credit)
-    global_accounts << global_account(:payment_fees, normal_balance: debit )
 
     global_accounts
   end
@@ -182,7 +181,6 @@ class SetupService < ApplicationService
     # attach global accounts to categories
     attach_account_to_category(global_account(:escrow)      , :cash)
     attach_account_to_category(global_account(:revenue)     , :revenue)
-    attach_account_to_category(global_account(:payment_fees), :expense)
 
     reports
   end

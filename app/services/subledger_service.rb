@@ -17,14 +17,10 @@ class SubledgerService < ApplicationService
     lines = []
 
     # buyer line
-    buyer_ar = account_receivable buyer_id, role: :buyer
+    buyer_ar = account_receivable buyer_id, role: :buyer, category_id: :accounts_receivable
     lines.push debit_line(account: buyer_ar, amount: purchase_amount)
 
-    # revenue line
-    revenue = global_account :revenue
-    lines.push credit_line(account: revenue, amount: revenue_amount)
-
-    # lines for each payable
+    # lines for each other payable
     payables.each do |payable|
       payable = payable.symbolize_keys
 
@@ -40,10 +36,14 @@ class SubledgerService < ApplicationService
       attach_category_to_report role, :balance, parent_category_id: :accounts_payable
 
       # create the account and attach the category
-      entity_account_payable = account_payable account_id, role: role, category: role
+      entity_account_payable = account_payable account_id, role: role, category_id: role
 
       lines.push credit_line(account: entity_account_payable, amount: amount)
     end
+
+    # revenue line
+    revenue = global_account :revenue
+    lines.push credit_line(account: revenue, amount: revenue_amount)
 
     # post the lines
     return post_transaction :goods_sold, transaction_id, lines, {
@@ -56,27 +56,29 @@ class SubledgerService < ApplicationService
     data = data .symbolize_keys
   
     # transaction data  
-    transaction_id  = data[:transaction_id]
-    buyer_id        = data[:buyer_id]
-    purchase_amount = BigDecimal.new data[:purchase_amount]
-    payment_fee     = BigDecimal.new data[:payment_fee]
-    reference_url   = data[:reference_url]
-    description     = data[:description]
+    transaction_id      = data[:transaction_id]
+    buyer_id            = data[:buyer_id]
+    purchase_amount     = BigDecimal.new data[:purchase_amount]
+    intermediate_id     = data[:intermediate_id]
+    intermediate_role   = data[:intermediate_role]
+    intermediation_fee  = BigDecimal.new data[:intermediation_fee]
+    reference_url       = data[:reference_url]
+    description         = data[:description]
 
     # journal entry lines
     lines = []
 
     # buyer line
-    buyer_ar = account_receivable buyer_id, role: :buyer
+    buyer_ar = account_receivable buyer_id, role: :buyer, category_id: :accounts_receivable
     lines.push credit_line(account: buyer_ar, amount: purchase_amount)
 
-    # payment fees line
-    payment_fees = global_account :payment_fees
-    lines.push debit_line(account: payment_fees, amount: payment_fee)
+    # intermediate fees line
+    intermediate_ap = account_payable intermediate_id, role: intermediate_role
+    lines.push debit_line(account: intermediate_ap, amount: intermediation_fee)
 
     # escrow line
     escrow = global_account :escrow
-    lines.push debit_line(account: escrow, amount: purchase_amount - payment_fee)
+    lines.push debit_line(account: escrow, amount: purchase_amount - intermediation_fee)
 
     # post the lines
     return post_transaction :card_charge_success, transaction_id, lines, {

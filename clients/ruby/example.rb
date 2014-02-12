@@ -16,13 +16,14 @@ def goods_sold(client, transaction_id)
     transaction_id: transaction_id,
     buyer_id: "buyer1@test.com",
     purchase_amount: "150",
-    revenue_amount: "19.25",
+    revenue_amount: "10",
     payables: [
-      { id: "referrer1@test.com",    amount: "20.10",  role: "referrer"    },
-      { id: "publisher1@test.com",   amount: "40.90",  role: "publisher"   },
-      { id: "distributor1@test.com", amount: "55",     role: "distributor" },
-      { id: "taxes1@test.com",       amount: "7.75",   role: "government"  },
-      { id: "whatever1@test.com",    amount: "7  " ,   role: "whatever"    },
+      { id: "stripe",                amount: "9.25",   role: "payment_gateway" },
+      { id: "referrer1@test.com",    amount: "20.10",  role: "referrer"        },
+      { id: "publisher1@test.com",   amount: "40.90",  role: "publisher"       },
+      { id: "distributor1@test.com", amount: "55",     role: "distributor"     },
+      { id: "taxes1@test.com",       amount: "7.75",   role: "government"      },
+      { id: "whatever1@test.com",    amount: "7  " ,   role: "whatever"        },
     ],
     reference_url: "http://testingapi.com/#{transaction_id}",
     description: "API Ruby Client Goods Sold #{transaction_id}"
@@ -35,7 +36,9 @@ def card_charge_success(client, transaction_id)
     transaction_id: transaction_id,
     buyer_id: "buyer1@test.com",
     purchase_amount: "150",
-    payment_fee: "10",
+    intermediate_id: "stripe",
+    intermediate_role: "payment_gateway",
+    intermediation_fee: "9.25",
     reference_url: "http://testingapi.com/#{transaction_id}",
     description: "API Ruby Client Card Charge Success #{transaction_id}"
   )

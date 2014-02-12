@@ -24,13 +24,14 @@ def goods_sold(client,transaction_id):
     transaction_id=transaction_id, 
     buyer_id="buyer1@test.com",
     purchase_amount="150",
-    revenue_amount="19.25",
+    revenue_amount="10",
     payables=[
-      { "id": "referrer1@test.com",    "amount": "20.10",  "role": "referrer"    },
-      { "id": "publisher1@test.com",   "amount": "40.90",  "role": "publisher"   },
-      { "id": "distributor1@test.com", "amount": "55",     "role": "distributor" },
-      { "id": "taxes1@test.com",       "amount": "7.75",   "role": "government"  },
-      { "id": "whatever1@test.com",    "amount": "7  " ,   "role": "whatever"    },
+      { "id": "stripe",                "amount": "9.25",   "role": "payment_gateway" },
+      { "id": "referrer1@test.com",    "amount": "20.10",  "role": "referrer"        },
+      { "id": "publisher1@test.com",   "amount": "40.90",  "role": "publisher"       },
+      { "id": "distributor1@test.com", "amount": "55",     "role": "distributor"     },
+      { "id": "taxes1@test.com",       "amount": "7.75",   "role": "government"      },
+      { "id": "whatever1@test.com",    "amount": "7  " ,   "role": "whatever"        },
     ],
     reference_url="http://testingapi.com",
     description="API Python Client Goods Sold")
@@ -41,7 +42,9 @@ def charge_success(client,transaction_id):
     transaction_id=transaction_id,
     buyer_id="buyer1@test.com",
     purchase_amount="150",
-    payment_fee="10",
+    intermediate_id="stripe",
+    intermediate_role="payment_gateway",
+    intermediation_fee="9.25",
     reference_url="http://testingapi.com/4",
     description="API Python Client Card Charge Success")
 
@@ -58,7 +61,7 @@ def payout_publisher(client,transaction_id):
   print "* Payout Publisher"
   print client.payout_publisher(
     transaction_id=transaction_id,
-    account_id="publisher@test.com",
+    account_id="publisher1@test.com",
     payout_amount="40.90",
     reference_url="http://testingapi.com",
     description="API Python Client Payout Publisher")
@@ -104,9 +107,9 @@ def main(href,user,pswd,transaction_id):
     client = pnp.Client(href,user,pswd)
 
     # call the predefined methods
-    goods_sold(client,transaction_id)
-    charge_success(client,transaction_id)
-    payout_referrer(client,transaction_id)
+    #goods_sold(client,transaction_id)
+    #charge_success(client,transaction_id)
+    #payout_referrer(client,transaction_id)
     payout_publisher(client,transaction_id)
     payout_distributor(client,transaction_id)
     payout_government(client,transaction_id)
