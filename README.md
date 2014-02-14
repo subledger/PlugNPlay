@@ -1,10 +1,10 @@
 # Plug N' Play
 
-This project is a Rails application that should be used as reference for integrating with Subledger API.
+This project is a Rails application that should be used as reference for integrating with the Subledger API.
 
-It tries to make integrating with Subledger even easier, by encapsulating your accounting logic into single API calls, which in turn make the calls to the lower level Subledger APIs. It also handle mapping between your app user and transaction ids (optional) to the Subledger IDs.
+It makes integrating with Subledger easier than ever, by encapsulating your accounting logic into single API calls, which in turn make the calls to the lower level Subledger APIs. It also handles mapping between your transactions, customers, vendors, products and your Subledger accounts and journal entry ids (optional).
 
-It should be deployed as a standalone App, and accessed by means of the API it exposes. To make thigs even simplier, we also provide an HTTP client for the API, so you just need to do add the client to your code, and make the calls at the right place, passing the right data.
+It should be deployed as a standalone App, and accessed by means of the API it exposes. To make thigs even simplier, we also provide an HTTP client for the API, so you just need to do add the client gem to your Gemfile, and make the calls at the right place, passing the right data.
 
 The example client code can be found at:
 https://github.com/subledger/PlugNPlay/tree/atpay/clients/ruby
