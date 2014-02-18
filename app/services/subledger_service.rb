@@ -1,118 +1,91 @@
 class SubledgerService < ApplicationService
   knows_accounting
 
-  def goods_sold(data)
-    data = data.symbolize_keys
-
-    # transaction data
-    transaction_id  = data[:transaction_id]
-    buyer_id        = data[:buyer_id]
-    purchase_amount = BigDecimal.new data[:purchase_amount]
-    revenue_amount  = BigDecimal.new data[:revenue_amount]
-    payables        = data[:payables]
-    reference_url   = data[:reference_url]
-    description     = data[:description]
-
-    # journal entry lines
+  def user_deposit(data)
     lines = []
 
-    # buyer line
-    buyer_ar = account_receivable buyer_id, role: :buyer, category_id: :accounts_receivable
-    lines.push debit_line(account: buyer_ar, amount: purchase_amount)
-
-    # lines for each other payable
-    payables.each do |payable|
-      payable = payable.symbolize_keys
-
-      # line attributes
-      account_id = payable[:id]
-      role = payable[:role].to_sym
-      amount = BigDecimal.new payable[:amount]
-
-      # get a category for this role
-      category(role, normal_balance: credit)
-
-      # attach the category to report
-      attach_category_to_report role, :balance, parent_category_id: :accounts_payable
-
-      # create the account and attach the category
-      entity_account_payable = account_payable account_id, role: role, category_id: role
-
-      lines.push credit_line(account: entity_account_payable, amount: amount)
-    end
-
-    # revenue line
-    revenue = global_account :revenue
-    lines.push credit_line(account: revenue, amount: revenue_amount)
-
-    # post the lines
-    return post_transaction :goods_sold, transaction_id, lines, {
-      description: description,
-      reference_url: reference_url
-    }
+    return lines
   end
 
-  def card_charge_success(data)
-    data = data .symbolize_keys
-  
-    # transaction data  
-    transaction_id      = data[:transaction_id]
-    buyer_id            = data[:buyer_id]
-    purchase_amount     = BigDecimal.new data[:purchase_amount]
-    intermediate_id     = data[:intermediate_id]
-    intermediate_role   = data[:intermediate_role]
-    intermediation_fee  = BigDecimal.new data[:intermediation_fee]
-    reference_url       = data[:reference_url]
-    description         = data[:description]
+  def user_funds_received(data)
+    user_id     = data[:user_id]
+    user_funds  = BigDecimal.new data[:user_funds]
+    gateway_fee = BigDecimal.new data[:gateway_fee]
 
-    # journal entry lines
-    lines = []
+    # calculate depoist amount
+    deposit_amount  = user_funds + gateway_fee
 
-    # buyer line
-    buyer_ar = account_receivable buyer_id, role: :buyer, category_id: :accounts_receivable
-    lines.push credit_line(account: buyer_ar, amount: purchase_amount)
-
-    # intermediate fees line
-    intermediate_ap = account_payable intermediate_id, role: intermediate_role
-    lines.push debit_line(account: intermediate_ap, amount: intermediation_fee)
-
-    # escrow line
-    escrow = global_account :escrow
-    lines.push debit_line(account: escrow, amount: purchase_amount - intermediation_fee)
-
-    # post the lines
-    return post_transaction :card_charge_success, transaction_id, lines, {
-      description: description,
-      reference_url: reference_url
-    }
+    return [
+      debit_line(global_account: :cash_at_bank, amount: deposit_amount),
+      credit_line(accounts_payable: user_id, amount: user_funds, callback: user_subcategory),
+      credit_line(global_account: :gateway_revenue, amount: gateway_fee)
+    ]
   end
 
-  def payout(data)
-    data = data.symbolize_keys
+  def user_ripple_wallet_funded(data)
+    user_id = data[:user_id]
+    amount  = BigDecimal.new data[:amount]
 
-    # transaction attributes    
-    transaction_id = data[:transaction_id]
-    account_id     = data[:account_id]
-    account_role   = data[:account_role]
-    payout_amount  = BigDecimal.new data[:payout_amount]
-    reference_url  = data[:reference_url]
-    description    = data[:description]
-
-    # journal entry lines
-    lines = []
-
-    # buyer line
-    entity_ap = account_payable account_id, role: account_role
-    lines.push debit_line(account: entity_ap, amount: payout_amount)
-
-    # escrow line
-    escrow = global_account :escrow
-    lines.push credit_line(account: escrow, amount: payout_amount)
-
-    # post lines
-    return post_transaction "payout_#{account_role}", transaction_id, lines, {
-      description: description,
-      reference_url: reference_url
-    }
+    return [
+      credit_line(global_account: :cash_at_wallet, amount: amount),
+      debit_line(accounts_payable: user_id, amount: amount, callback: user_subcategory)
+    ]
   end
+
+  def bank_to_ripple_wallet(data)
+    amount = BigDecimal.new data[:amount]
+
+    return [
+      debit_line(global_account: :cash_at_wallet, amount: amount),
+      credit_line(global_account: :cash_at_bank, amount: amount)
+    ]
+  end
+
+  def user_funds_transferred_out_of_bank(data)
+    user_id         = data[:user_id]
+    transfer_amount = BigDecimal.new data[:transfer_amount]
+    gateway_fee     = BigDecimal.new data[:gateway_fee]
+
+    # calculate total amount
+    total_amount = transfer_amount + gateway_fee
+
+    return [
+      credit_line(global_account: :cash_at_bank, amount: transfer_amount),
+      debit_line(accounts_payable: user_id, amount: total_amount, callback: user_subcategory),
+      credit_line(global_account: :gateway_revenue, amount: gateway_fee)
+    ]
+  end
+
+  def user_funds_transferred_off_ripple_network(data)
+    user_id = data[:user_id]
+    amount  = BigDecimal.new data[:amount]
+
+    return [
+      debit_line(global_account: :cash_at_wallet, amount: amount),
+      credit_line(accounts_payable: user_id, amount: amount, callback: user_subcategory)
+    ]
+  end
+
+  def ripple_wallet_to_bank(data)
+    amount = BigDecimal.new data[:amount]
+
+    return [
+      credit_line(global_account: :cash_at_wallet, amount: amount),
+      debit_line(global_account: :cash_at_bank, amount: amount)
+    ]
+  end
+
+private
+  # makes sure a subcategory exists for the given user
+  user_subcategory = Proc.new do |account, amount, config|
+    # get user id from config
+    user_id = config[:accounts_payable]
+
+    # create a subcategory for this user and attach if to report
+    category(user_id, normal_balance: credit)
+    attach_category_to_report user_id, :balance, parent_category_id: :accounts_payable
+
+    # attach the user account to the category
+    attach_account_to_category accounts_payable(user_id), user_id
+  end  
 end

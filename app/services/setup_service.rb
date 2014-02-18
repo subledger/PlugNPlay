@@ -138,8 +138,9 @@ class SetupService < ApplicationService
     Rails.logger.info "- Creating Global Accounts..."
 
     global_accounts = []
-    global_accounts << global_account(:escrow      , normal_balance: debit )
-    global_accounts << global_account(:revenue     , normal_balance: credit)
+    global_accounts << global_account(:cash_at_wallet , normal_balance: debit )
+    global_accounts << global_account(:cash_at_bank   , normal_balance: debit )
+    global_accounts << global_account(:gateway_revenue, normal_balance: credit)
 
     global_accounts
   end
@@ -151,10 +152,8 @@ class SetupService < ApplicationService
     categories << category(:assets             , normal_balance: debit )
     categories << category(:cash               , normal_balance: debit )
     categories << category(:revenue            , normal_balance: credit)
-    categories << category(:expense            , normal_balance: debit )
     categories << category(:liabilities        , normal_balance: credit)
     categories << category(:accounts_payable   , normal_balance: credit)
-    categories << category(:accounts_receivable, normal_balance: debit )
 
     categories
   end
@@ -165,22 +164,21 @@ class SetupService < ApplicationService
     reports = []
 
     # create the report
-    reports << report(:balance, description: "Chart of Accounts")
+    reports << report(:balance, description: "Report")
 
     # attach the main categories
     attach_category_to_report :assets     , :balance
     attach_category_to_report :revenue    , :balance
-    attach_category_to_report :expense    , :balance
     attach_category_to_report :liabilities, :balance
 
     # attach the subcategories
     attach_category_to_report :cash               , :balance, parent_category_id: :assets
-    attach_category_to_report :accounts_receivable, :balance, parent_category_id: :assets
     attach_category_to_report :accounts_payable   , :balance, parent_category_id: :liabilities
 
     # attach global accounts to categories
-    attach_account_to_category(global_account(:escrow)      , :cash)
-    attach_account_to_category(global_account(:revenue)     , :revenue)
+    attach_account_to_category(global_account(:cash_at_wallet) , :cash   )
+    attach_account_to_category(global_account(:cash_at_bank)   , :cash   )
+    attach_account_to_category(global_account(:gateway_revenue), :revenue)
 
     reports
   end

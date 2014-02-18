@@ -38,7 +38,7 @@ module Pnp
       def reset_subledger
         @subledger = nil
       end
-  
+
       def credit(amount = nil)
         amount.present? ? subledger.credit(amount) : subledger.credit
       end
@@ -53,9 +53,6 @@ module Pnp
         # required parameters
         id = id.to_sym
   
-        # optional parameters
-        category_id = config[:category_id]
-  
         # get subledger id calculated from config
         to_subledger_config = config.slice(:sufixes, :prefixes)
         subledger_id, key = to_subledger_id :account, id, to_subledger_config
@@ -68,11 +65,6 @@ module Pnp
           unless Mapping.entity_map_exists?(:account, key)
             # update cache and file if this is a new account
             Mapping.map_entity(:account, key, account.id)
-  
-            # attach to a report category category, if one was provided
-            if category_id.present?
-              attach_account_to_category account, category_id
-            end
           end
 
           account
@@ -182,16 +174,32 @@ module Pnp
         category(category_id).attach account: account
       end
   
-      def line(account, amount)
+      def line(account, amount, config)
+        if not account.present? and config[:global_account].present? 
+          account = global_account(config[:global_account)
+        end
+
+        if not account.present? and config[:accounts_payable].present? 
+          account = accounts_payable(config[:accounts_payable)
+        end
+
+        if not account.present? and config[:accounts_receivable].present? 
+          account = accounts_receivable(config[:accounts_receivable)
+        end
+
+        if config[:callback].present?
+          config[:callback].call(account, amount, config)
+        end
+
         { account: account, value: amount }
       end
   
       def credit_line(config)
-        line config[:account], credit(config[:amount])
+        line config[:account], credit(config[:amount], config)
       end
   
       def debit_line(config)
-        line config[:account], debit(config[:amount])
+        line config[:account], debit(config[:amount], config)
       end
   
       def post_transaction(transaction, transaction_id, lines, config = {})
