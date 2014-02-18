@@ -25,7 +25,7 @@ module PlugNPlay
     config.autoload_paths += %W(#{config.root}/app/services)
 
     # Cache configuration
-    config.cache_store = :memory_store, { size: 4.megabytes }
+    config.cache_store = :memory_store, { size: 128.megabytes }
 
     # Basic authentication
     config.pnp_user = "pnp"

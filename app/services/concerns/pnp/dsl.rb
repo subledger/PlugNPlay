@@ -56,18 +56,20 @@ module Pnp
         # get subledger id calculated from config
         to_subledger_config = config.slice(:sufixes, :prefixes)
         subledger_id, key = to_subledger_id :account, id, to_subledger_config
-       
-        # instantiate/create the account
-        data = { id: subledger_id, description: CGI::escape(key) }
-        data = data.merge config.slice(:description, :normal_balance)
 
-        subledger.accounts.new_or_create(data) do |account|  
-          unless Mapping.entity_map_exists?(:account, key)
-            # update cache and file if this is a new account
-            Mapping.map_entity(:account, key, account.id)
+        Rails.cache.fetch key do
+          # instantiate/create the account
+          data = { id: subledger_id, description: CGI::escape(key) }
+          data = data.merge config.slice(:description, :normal_balance)
+
+          subledger.accounts.new_or_create(data) do |account|  
+            unless Mapping.entity_map_exists?(:account, key)
+              # update cache and file if this is a new account
+              Mapping.map_entity(:account, key, account.id)
+            end
+
+            account
           end
-
-          account
         end
       end
   
@@ -110,24 +112,24 @@ module Pnp
   
         # get subledger id calculated from config
         subledger_id, key = to_subledger_id(:category, id)
+
+        Rails.cache.fetch key do
+          if subledger_id.present?
+            subledger.categories.read id: subledger_id
+
+          else
+            # prepare category data
+            data = { description: id.to_s.humanize, version: 1 }
+            data = data.merge config.slice(:description, :normal_balance, :version)
+
+            # create the category
+            the_category = subledger.categories.create data
+
+            # save new mapping
+            Mapping.map_entity("category", key, the_category.id)
   
-        if subledger_id.present?
-          subledger.categories.read id: subledger_id
-
-        else
-          # prepare category data
-          data = { description: id.to_s.humanize, version: 1 }
-          data = data.merge config.slice(:description, :normal_balance, :version)
-
-          Rails.logger.info data
-
-          # create the category
-          the_category = subledger.categories.create data
-
-          # save new mapping
-          Mapping.map_entity("category", key, the_category.id)
-  
-          return the_category
+            return the_category
+          end
         end
       end
   
@@ -139,39 +141,54 @@ module Pnp
   
         # get calculated Subledger id
         subledger_id, key = to_subledger_id :report, id
-  
-        if subledger_id.present?
-          # return the report if already mapped
-          subledger.reports.read id: subledger_id
-  
-        else
-          # prepare report data
-          data = { description: "Report #{id.to_s.humanize}" }
-          data = data.merge config.slice :description
 
-          # create the report
-          the_report = subledger.reports.create data
-            
-          # save new mapping
-          Mapping.map_entity(:report, key, the_report.id)
+        Rails.cache.fetch key do
+          if subledger_id.present?
+            # return the report if already mapped
+            subledger.reports.read id: subledger_id
   
-          return the_report
+          else
+            # prepare report data
+            data = { description: "Report #{id.to_s.humanize}" }
+            data = data.merge config.slice :description
+
+            # create the report
+            the_report = subledger.reports.create data
+              
+            # save new mapping
+            Mapping.map_entity(:report, key, the_report.id)
+  
+            return the_report
+          end
         end
       end
 
       def attach_category_to_report(category_id, report_id, config = {})
-        parent_category_id = config[:parent_category_id]
+        id = "#{category_id}_#{report_id}".to_sym
+        mapping_id, key = to_subledger_id :category_report, id
 
-        # attaching data
-        data = { category: category(category_id) }
-        data[:parent] = category(parent_category_id) if parent_category_id.present?
+        unless mapping_id.present?
+          parent_category_id = config[:parent_category_id]
 
-        # attach it
-        report(report_id).attach data
+          # attaching data
+          data = { category: category(category_id) }
+          data[:parent] = category(parent_category_id) if parent_category_id.present?
+
+          # attach
+          report(report_id).attach data
+
+          Mapping.map_entity :category_report, key, "already attached"
+        end
       end
 
       def attach_account_to_category(account, category_id)
-        category(category_id).attach account: account
+        id = "#{account.id}_#{category_id}".to_sym
+        mapping_id, key = to_subledger_id :account_category, id
+
+        unless mapping_id.present?
+          category(category_id).attach account: account
+          Mapping.map_entity :account_category, key, "already attached"
+        end
       end
   
       def line(account, amount, config)
