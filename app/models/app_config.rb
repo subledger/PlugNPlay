@@ -8,14 +8,14 @@ class AppConfig < ActiveRecord::Base
   after_commit :flush_cache
 
   def self.get_value(key)
-    Rails.cache.fetch key do
+    Rails.cache.fetch ["pnp", "domain", "app_config", key, "value"] do
       result = AppConfig.find_by_key(key)
       result.present? ? result.value : nil
     end
   end
 
   def flush_cache
-    Rails.cache.delete self.key
+    Rails.cache.delete ["pnp", "domain", "app_config", self.key, "value"]
   end
 
   def to_s

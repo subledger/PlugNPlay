@@ -3,7 +3,7 @@ class TriggerWorker
   sidekiq_options :retry => false
 
   include Pnp::Dsl
-  knows_accouting
+  knows_accounting
 
   def perform(name, data)
     # symbolize data keys

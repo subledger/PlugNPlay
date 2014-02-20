@@ -57,19 +57,25 @@ module Pnp
         to_subledger_config = config.slice(:sufixes, :prefixes)
         subledger_id, key = to_subledger_id :account, id, to_subledger_config
 
-        Rails.cache.fetch key do
-          # instantiate/create the account
-          data = { id: subledger_id, description: CGI::escape(key) }
-          data = data.merge config.slice(:description, :normal_balance)
+        Rails.cache.fetch ["pnp", "dsl", "account", key] do
+          the_account = nil
 
-          subledger.accounts.new_or_create(data) do |account|  
-            unless Mapping.entity_map_exists?(:account, key)
-              # update cache and file if this is a new account
-              Mapping.map_entity(:account, key, account.id)
-            end
+          if subledger_id.present?
+            the_account = subledger.accounts.read id: subledger_id
 
-            account
+          else
+            # prepare the data
+            data = { id: subledger_id, description: CGI::escape(key) }
+            data = data.merge config.slice(:description, :normal_balance)
+
+            # create the account
+            the_account = subledger.accounts.create data
+
+            # map it
+            Mapping.map_entity(:account, key, the_account.id)
           end
+
+          return the_account
         end
       end
   
@@ -103,7 +109,6 @@ module Pnp
         account id, normal_config.merge(config)
       end
   
-      # config = :id, :normal_balance
       def category(id, config = {})
         config = config.symbolize_keys
 
@@ -113,9 +118,11 @@ module Pnp
         # get subledger id calculated from config
         subledger_id, key = to_subledger_id(:category, id)
 
-        Rails.cache.fetch key do
+        Rails.cache.fetch ["pnp", "dsl", "category", key] do
+          the_category = nil
+
           if subledger_id.present?
-            subledger.categories.read id: subledger_id
+            the_category = subledger.categories.read id: subledger_id
 
           else
             # prepare category data
@@ -127,9 +134,9 @@ module Pnp
 
             # save new mapping
             Mapping.map_entity("category", key, the_category.id)
-  
-            return the_category
           end
+  
+          return the_category
         end
       end
   
@@ -142,10 +149,12 @@ module Pnp
         # get calculated Subledger id
         subledger_id, key = to_subledger_id :report, id
 
-        Rails.cache.fetch key do
+        Rails.cache.fetch ["pnp", "dsl", "report", key] do
+          the_report = nil
+
           if subledger_id.present?
             # return the report if already mapped
-            subledger.reports.read id: subledger_id
+            the_report = subledger.reports.read id: subledger_id
   
           else
             # prepare report data
@@ -157,9 +166,9 @@ module Pnp
               
             # save new mapping
             Mapping.map_entity(:report, key, the_report.id)
-  
-            return the_report
           end
+  
+          return the_report
         end
       end
 
@@ -192,16 +201,16 @@ module Pnp
       end
   
       def line(account, amount, config)
-        if not account.present? and config[:global_account].present? 
-          account = global_account(config[:global_account)
+        if not account.present? and config[:global_account_id].present? 
+          account = global_account(config[:global_account_id])
         end
 
-        if not account.present? and config[:accounts_payable].present? 
-          account = accounts_payable(config[:accounts_payable)
+        if not account.present? and config[:account_payable_id].present? 
+          account = account_payable(config[:account_payable_id])
         end
 
-        if not account.present? and config[:accounts_receivable].present? 
-          account = accounts_receivable(config[:accounts_receivable)
+        if not account.present? and config[:account_receivable_id].present? 
+          account = account_receivable(config[:account_receivable_id])
         end
 
         if config[:callback].present?
@@ -212,11 +221,11 @@ module Pnp
       end
   
       def credit_line(config)
-        line config[:account], credit(config[:amount], config)
+        line config[:account], credit(config[:amount]), config
       end
   
       def debit_line(config)
-        line config[:account], debit(config[:amount], config)
+        line config[:account], debit(config[:amount]), config
       end
   
       def post_transaction(transaction, transaction_id, lines, config = {})

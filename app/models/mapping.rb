@@ -8,8 +8,8 @@ class Mapping < ActiveRecord::Base
   after_commit :flush_cache
 
   def flush_cache
-    Rails.cache.delete [self.key, "exists"]
-    Rails.cache.delete [self.key, "value"]
+    Rails.cache.delete ["pnp", "domain", "mapping", self.key, "exists"]
+    Rails.cache.delete ["pnp", "domain", "mapping", self.key, "value"]
   end
 
   def to_s
@@ -23,7 +23,7 @@ class Mapping < ActiveRecord::Base
   def self.entity_map_exists?(entity, key)
     entity_key = "#{entity}::#{key}"
 
-    Rails.cache.fetch [entity_key, "exists"] do
+    Rails.cache.fetch ["pnp", "domain", "mapping", entity_key, "exists"] do
       Mapping.exists?(key: entity_key)
     end
   end
@@ -35,7 +35,7 @@ class Mapping < ActiveRecord::Base
   def self.entity_map_value(entity, key)
     entity_key = "#{entity}::#{key}"
 
-    Rails.cache.fetch [entity_key, "value"] do
+    Rails.cache.fetch ["pnp", "domain", "mapping", entity_key, "value"] do
       mapping = find_entity_map(entity, key)
       mapping.present? ? mapping.value : nil
     end
