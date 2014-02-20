@@ -98,7 +98,7 @@ public class Example {
 	}
 
 	/**
-	 * This is just an example scenario, where two user add money to the gateway,
+	 * This is just an example scenario, where two users add money to the gateway,
 	 * then each moves part of the deposited amount to his virtual ripple wallet.
 	 * 
 	 * The gateway then transfer an amount from its bank account to its ripple
@@ -116,28 +116,28 @@ public class Example {
 	 * 
 	 * IMPORTANT:
 	 * - All the id parameters refer to id's on your application. The mapping of
-	 *  this id to the actual Subledger accounts id's are handled inside PnP.
-	 *  In other words, you talk to PnP on your own terms.
+	 *   this id to the actual Subledger accounts id's are handled inside PnP.
+	 *   In other words, you talk to PnP on your own terms.
 	 *  
 	 * - Transaction Id doesn't need to be an integer, but must be unique for a 
 	 *   given event. For example, transaction_id could be '1', 'ASDBC123', or a UUID,
 	 *   but if you used transaction_id '1' on event 'userFundsReceived', you can not use
 	 *   it again on that event. You can use transaction_id '1' on userRippleWalletFunded 
-	 *   although. You will probably just use the transaction from your own application.
+	 *   although. You will probably just use the transaction id from your own application.
 	 *   
 	 * - User Id also doens't need to be an email. This id must not change for a given user,
 	 *   so if you app allows the user to change his email, use something else as a user id.
 	 *   
 	 * - Amounts should be given as String to avoid conversions errors, should not contain
 	 *   currency sign, should not contain group separator. Decimal places are optional, but
-	 *   if used, should use dot as separator. We accept up to 12 decimal places.
+	 *   should use dot as separator when used. We handle up to 12 decimal places.
 	 *   Ex: one thousand = 1000 or 1000.00
 	 *   Ex: ten and one cent = 10.01
 	 *   Ex: ten thousands = 10000.00
 	 *   
 	 * - PnP runs asynchronously and enqueues requests to handle load, so call to its api should
 	 *   return fast, but you will not get an error message if some wrong value was passed.
-	 *   For check the outcome of an event, you will have to use the 'trasaction_status' method,
+	 *   To check the outcome of an event, you will have to use the 'trasaction_status' method,
 	 *   which runs synchronously, and will tell you if the transaction was already processed,
 	 *   and if yes, what was the outcome.
 	 *   
