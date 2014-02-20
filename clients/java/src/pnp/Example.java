@@ -20,8 +20,8 @@ public class Example {
 			"User Funds Received " + userId,
 			userId,
 			totalAmount,
-			"89.90",
-			"10.10"
+			userAmount,
+			gatewayFee
 		);
 		
 		System.out.println(response);
