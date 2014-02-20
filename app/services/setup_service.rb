@@ -151,6 +151,8 @@ class SetupService < ApplicationService
     categories = []
     categories << category(:assets             , normal_balance: debit )
     categories << category(:cash               , normal_balance: debit )
+    categories << category(:cash_at_wallet     , normal_balance: debit )
+    categories << category(:cash_at_bank       , normal_balance: debit )
     categories << category(:revenue            , normal_balance: credit)
     categories << category(:liabilities        , normal_balance: credit)
     categories << category(:accounts_payable   , normal_balance: credit)
@@ -173,12 +175,14 @@ class SetupService < ApplicationService
 
     # attach the subcategories
     attach_category_to_report :cash               , :balance, parent_category_id: :assets
+    attach_category_to_report :cash_at_wallet     , :balance, parent_category_id: :cash
+    attach_category_to_report :cash_at_bank       , :balance, parent_category_id: :cash
     attach_category_to_report :accounts_payable   , :balance, parent_category_id: :liabilities
 
     # attach global accounts to categories
-    attach_account_to_category(global_account(:cash_at_wallet) , :cash   )
-    attach_account_to_category(global_account(:cash_at_bank)   , :cash   )
-    attach_account_to_category(global_account(:gateway_revenue), :revenue)
+    attach_account_to_category global_account(:cash_at_wallet) , :cash_at_wallet
+    attach_account_to_category global_account(:cash_at_bank)   , :cash_at_bank
+    attach_account_to_category global_account(:gateway_revenue), :revenue
 
     reports
   end
