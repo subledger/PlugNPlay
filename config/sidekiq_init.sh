@@ -11,7 +11,7 @@
 
 
 #Variable Set
-APP="atpay"
+APP="granular"
 APP_DIR="/opt/${APP}"
 APP_CONFIG="${APP_DIR}/config"
 LOG_FILE="$APP_DIR/log/sidekiq.log"
@@ -22,7 +22,7 @@ SIDEKIQ="sidekiq"
 APP_ENV="production"
 BUNDLE="bundle"
 
-START_CMD="$BUNDLE exec $SIDEKIQ -e $APP_ENV -P $PID_FILE"
+START_CMD="$BUNDLE exec $SIDEKIQ -c 1 -e $APP_ENV -P $PID_FILE"
 RETVAL=0
 
 

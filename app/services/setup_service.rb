@@ -140,6 +140,7 @@ class SetupService < ApplicationService
     global_accounts = []
     global_accounts << global_account(:escrow      , normal_balance: debit )
     global_accounts << global_account(:revenue     , normal_balance: credit)
+    global_accounts << global_account(:ap_stripe   , normal_balance: credit)
 
     global_accounts
   end
@@ -148,13 +149,15 @@ class SetupService < ApplicationService
     Rails.logger.info "- Creating Categories..."
 
     categories = []
-    categories << category(:assets             , normal_balance: debit )
-    categories << category(:cash               , normal_balance: debit )
-    categories << category(:revenue            , normal_balance: credit)
-    categories << category(:expense            , normal_balance: debit )
-    categories << category(:liabilities        , normal_balance: credit)
-    categories << category(:accounts_payable   , normal_balance: credit)
-    categories << category(:accounts_receivable, normal_balance: debit )
+    categories << category(:assets                   , normal_balance: debit )
+    categories << category(:cash                     , normal_balance: debit )
+    categories << category(:revenue                  , normal_balance: credit)
+    categories << category(:liabilities              , normal_balance: credit)
+    categories << category(:accounts_payable         , normal_balance: credit)
+    categories << category(:accounts_receivable      , normal_balance: debit )
+    categories << category(:unearned_revenue         , normal_balance: credit)
+    categories << category(:unused_balance           , normal_balance: credit)
+    categories << category(:unused_balance_processing, normal_balance: credit)
 
     categories
   end
@@ -170,17 +173,19 @@ class SetupService < ApplicationService
     # attach the main categories
     attach_category_to_report :assets     , :balance
     attach_category_to_report :revenue    , :balance
-    attach_category_to_report :expense    , :balance
     attach_category_to_report :liabilities, :balance
 
     # attach the subcategories
-    attach_category_to_report :cash               , :balance, parent_category_id: :assets
-    attach_category_to_report :accounts_receivable, :balance, parent_category_id: :assets
-    attach_category_to_report :accounts_payable   , :balance, parent_category_id: :liabilities
+    attach_category_to_report :cash                     , :balance, parent_category_id: :assets
+    attach_category_to_report :accounts_payable         , :balance, parent_category_id: :liabilities
+    attach_category_to_report :accounts_receivable      , :balance, parent_category_id: :assets
+    attach_category_to_report :unearned_revenue         , :balance, parent_category_id: :liabilities
+    attach_category_to_report :unused_balance           , :balance, parent_category_id: :unearned_revenue
+    attach_category_to_report :unused_balance_processing, :balance, parent_category_id: :unearned_revenue
 
     # attach global accounts to categories
-    attach_account_to_category(global_account(:escrow)      , :cash)
-    attach_account_to_category(global_account(:revenue)     , :revenue)
+    attach_account_to_category(global_account(:escrow)   , :cash           )
+    attach_account_to_category(global_account(:revenue)  , :revenue        )
 
     reports
   end

@@ -1,9 +1,9 @@
-working_directory "/opt/atpay"
-pid "/opt/atpay/tmp/pids/unicorn.pid"
-stderr_path "/opt/atpay/log/unicorn.log"
-stdout_path "/opt/atpay/log/unicorn.log"
+working_directory "/opt/granular"
+pid "/opt/granular/tmp/pids/unicorn.pid"
+stderr_path "/opt/granular/log/unicorn.log"
+stdout_path "/opt/granular/log/unicorn.log"
 
-listen "/opt/atpay/tmp/sockets/unicorn.atpay.sock"
+listen "/opt/granular/tmp/sockets/unicorn.granular.sock"
 preload_app true
 worker_processes 1
 timeout 30

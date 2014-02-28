@@ -1,26 +1,106 @@
 class SubledgerService < ApplicationService
   knows_accounting
 
-  def goods_sold(data)
-    data = data.symbolize_keys
+  def initialize
+    # makes sure a subcategory exists for a given account payable role
+    # and that it is attached to the report
+    @ap_role_subcategory = Proc.new do |account, amount, config|
+      # get intermediate role from config
+      role = config[:role]
 
-    # transaction data
-    transaction_id  = data[:transaction_id]
-    buyer_id        = data[:buyer_id]
+      # create a subcategory for this role
+      category role, normal_balance: credit
+
+      # and attach it to report
+      attach_category_to_report role, :balance, parent_category_id: :accounts_payable
+
+      # attach the user account to the category
+      attach_account_to_category account, role
+    end
+  end
+
+
+  ### User with an account (Wallet Style)
+
+  def user_adds_credit_using_credit_card(data)
+    user_id            = data[:user_id]
+    payment_amount     = BigDecimal.new data[:payment_amount]
+    intermediate_id    = data[:intermediate_id]
+    intermediate_role  = data[:intermediate_role]
+    intermediation_fee = BigDecimal.new data[:intermediation_fee]
+
+    balance = payment_amount - intermediation_fee
+
+    return [
+      debit_line(
+        account_receivable_id: user_id,
+        amount: payment_amount,
+        category_id: :accounts_receivable
+      ),
+      credit_line(
+        account: user_unused_balance_processing_account(user_id),
+        amount: balance
+      ),
+      credit_line(
+        account_payable_id: intermediate_id,
+        role: intermediate_role,
+        amount: intermediation_fee,
+        callback: @ap_role_subcategory
+      )
+    ]
+  end
+
+  def user_credit_added_successfully(data)
+    user_id             = data[:user_id]
+    payment_amount      = BigDecimal.new data[:payment_amount]
+    intermediate_id     = data[:intermediate_id]
+    intermediate_role   = data[:intermediate_role]
+    intermediation_fee  = BigDecimal.new data[:intermediation_fee]
+
+    balance = payment_amount - intermediation_fee
+
+    return [
+      credit_line(
+        account_receivable_id: user_id,
+        amount: payment_amount,
+        category_id: :accounts_receivable
+      ),
+      debit_line(
+        account: user_unused_balance_processing_account(user_id),
+        amount: balance
+      ),
+      credit_line(
+        account: user_unused_balance_account(user_id),
+        amount: balance
+      ),
+      debit_line(
+        global_account_id: :escrow,
+        amount: balance
+      ),
+      debit_line(
+        account_payable_id: intermediate_id,
+        role: intermediate_role,
+        amount: intermediation_fee,
+        callback: @ap_role_subcategory
+      )
+    ]
+  end
+
+  def purchase_with_balance(data)
+    user_id         = data[:user_id]
     purchase_amount = BigDecimal.new data[:purchase_amount]
     revenue_amount  = BigDecimal.new data[:revenue_amount]
     payables        = data[:payables]
-    reference_url   = data[:reference_url]
-    description     = data[:description]
 
-    # journal entry lines
     lines = []
 
-    # buyer line
-    buyer_ar = account_receivable buyer_id, role: :buyer, category_id: :accounts_receivable
-    lines.push debit_line(account: buyer_ar, amount: purchase_amount)
+    # user unused balance line
+    lines << debit_line(
+      account: user_unused_balance_account(user_id),
+      amount: purchase_amount
+    )
 
-    # lines for each other payable
+    # lines for each payable
     payables.each do |payable|
       payable = payable.symbolize_keys
 
@@ -29,90 +109,230 @@ class SubledgerService < ApplicationService
       role = payable[:role].to_sym
       amount = BigDecimal.new payable[:amount]
 
-      # get a category for this role
-      category(role, normal_balance: credit)
-
-      # attach the category to report
-      attach_category_to_report role, :balance, parent_category_id: :accounts_payable
-
-      # create the account and attach the category
-      entity_account_payable = account_payable account_id, role: role, category_id: role
-
-      lines.push credit_line(account: entity_account_payable, amount: amount)
+      lines << credit_line(
+        account_payable_id: account_id,
+        role: role,
+        amount: amount,
+        callback: @ap_role_subcategory
+      )
     end
 
     # revenue line
-    revenue = global_account :revenue
-    lines.push credit_line(account: revenue, amount: revenue_amount)
+    lines << credit_line(
+      global_account_id: :revenue,
+      amount: revenue_amount
+    )
 
-    # post the lines
-    return post_transaction :goods_sold, transaction_id, lines, {
-      description: description,
-      reference_url: reference_url
-    }
+    return lines
   end
 
-  def card_charge_success(data)
-    data = data .symbolize_keys
-  
-    # transaction data  
-    transaction_id      = data[:transaction_id]
-    buyer_id            = data[:buyer_id]
+  def refund_purchase_to_user_account(data)
+    user_id         = data[:user_id]
+    refund_amount   = BigDecimal.new data[:refund_amount]
+    revenue_amount  = BigDecimal.new data[:revenue_amount]
+    payables        = data[:payables]
+
+    lines = []
+
+    # user unused balance line
+    lines << credit_line(
+      account: user_unused_balance_account(user_id),
+      amount: refund_amount
+    )
+
+    # lines for each payable
+    payables.each do |payable|
+      payable = payable.symbolize_keys
+
+      # line attributes
+      account_id = payable[:id]
+      role = payable[:role].to_sym
+      amount = BigDecimal.new payable[:amount]
+
+      lines << debit_line(
+        account_payable_id: account_id,
+        role: role,
+        amount: amount,
+        callback: @ap_role_subcategory
+      )
+    end
+
+    # revenue line
+    lines << debit_line(
+      global_account_id: :revenue,
+      amount: revenue_amount
+    )
+
+    return lines
+  end
+
+
+  ### Drop-in user (not signed up)
+
+  def purchase_with_credit_card(data)
+    user_id             = data[:user_id]
     purchase_amount     = BigDecimal.new data[:purchase_amount]
+    revenue_amount      = BigDecimal.new data[:revenue_amount]
     intermediate_id     = data[:intermediate_id]
     intermediate_role   = data[:intermediate_role]
     intermediation_fee  = BigDecimal.new data[:intermediation_fee]
-    reference_url       = data[:reference_url]
-    description         = data[:description]
+    payables            = data[:payables]
 
-    # journal entry lines
     lines = []
 
-    # buyer line
-    buyer_ar = account_receivable buyer_id, role: :buyer, category_id: :accounts_receivable
-    lines.push credit_line(account: buyer_ar, amount: purchase_amount)
+    # user account receivable line
+    lines << debit_line(
+      account_receivable_id: user_id,
+      amount: purchase_amount,
+      category_id: :accounts_receivable
+    )
 
-    # intermediate fees line
-    intermediate_ap = account_payable intermediate_id, role: intermediate_role
-    lines.push debit_line(account: intermediate_ap, amount: intermediation_fee)
+    # intermediate line
+    lines << credit_line(
+      account_payable_id: intermediate_id,
+      role: intermediate_role,
+      amount: intermediation_fee,
+      callback: @ap_role_subcategory
+    )
 
-    # escrow line
-    escrow = global_account :escrow
-    lines.push debit_line(account: escrow, amount: purchase_amount - intermediation_fee)
+    # lines for each payable
+    payables.each do |payable|
+      payable = payable.symbolize_keys
 
-    # post the lines
-    return post_transaction :card_charge_success, transaction_id, lines, {
-      description: description,
-      reference_url: reference_url
-    }
+      # line attributes
+      account_id = payable[:id]
+      role = payable[:role].to_sym
+      amount = BigDecimal.new payable[:amount]
+
+      lines << credit_line(
+        account_payable_id: account_id,
+        role: role,
+        amount: amount,
+        callback: @ap_role_subcategory
+      )
+    end
+
+    # revenue line
+    lines << credit_line(
+      global_account_id: :revenue,
+      amount: revenue_amount
+    )
+
+    return lines
   end
 
-  def payout(data)
-    data = data.symbolize_keys
+  def credit_card_charge_success(data)
+    user_id             = data[:user_id]
+    purchase_amount      = BigDecimal.new data[:purchase_amount]
+    intermediate_id     = data[:intermediate_id]
+    intermediate_role   = data[:intermediate_role]
+    intermediation_fee  = BigDecimal.new data[:intermediation_fee]
 
-    # transaction attributes    
-    transaction_id = data[:transaction_id]
+    balance = purchase_amount - intermediation_fee
+
+    return [
+      credit_line(
+        account_receivable_id: user_id,
+        amount: purchase_amount,
+        category_id: :accounts_receivable
+      ),
+      debit_line(
+        global_account_id: :escrow,
+        amount: balance
+      ),
+      debit_line(
+        account_payable_id: intermediate_id,
+        role: intermediate_role,
+        amount: intermediation_fee,
+        callback: @ap_role_subcategory
+      )
+    ]
+  end
+
+  def refund_to_credit_card(data)
+    user_id             = data[:user_id]
+    refund_amount       = BigDecimal.new data[:refund_amount]
+    revenue_amount      = BigDecimal.new data[:revenue_amount]
+    intermediate_id     = data[:intermediate_id]
+    intermediate_role   = data[:intermediate_role]
+    intermediation_fee  = BigDecimal.new data[:intermediation_fee]
+    payables            = data[:payables]
+    
+    lines = []
+
+    # escrow account lines
+    lines << credit_line(
+      global_account_id: :escrow,
+      amount: refund_amount,
+    )
+
+    lines << debit_line(
+      global_account_id: :escrow,
+      amount: intermediation_fee,
+    )
+
+    # lines for each payable
+    payables.each do |payable|
+      payable = payable.symbolize_keys
+
+      # line attributes
+      account_id = payable[:id]
+      role = payable[:role].to_sym
+      amount = BigDecimal.new payable[:amount]
+
+      lines << debit_line(
+        account_payable_id: account_id,
+        role: role,
+        amount: amount,
+        callback: @ap_role_subcategory
+      )
+    end
+
+    # revenue line
+    lines << debit_line(
+      global_account_id: :revenue,
+      amount: revenue_amount
+    )
+
+    return lines
+  end
+
+
+  ### Independent from payment method
+
+  def payout(data)
     account_id     = data[:account_id]
     account_role   = data[:account_role]
     payout_amount  = BigDecimal.new data[:payout_amount]
-    reference_url  = data[:reference_url]
-    description    = data[:description]
 
-    # journal entry lines
-    lines = []
+    return [
+      debit_line(
+        account_payable_id: account_id,
+        role: account_role,
+        amount: payout_amount,
+        callback: @ap_role_subcategory
+      ),
+      credit_line(
+        global_account_id: :escrow,
+        amount: payout_amount
+      )
+    ]
+  end
 
-    # buyer line
-    entity_ap = account_payable account_id, role: account_role
-    lines.push debit_line(account: entity_ap, amount: payout_amount)
+private
+  def user_unused_balance_account(user_id)
+    account user_id, {
+      normal_balance: credit,
+      sufixes: [:unused_balance],
+      category_id: :unused_balance 
+    }
+  end
 
-    # escrow line
-    escrow = global_account :escrow
-    lines.push credit_line(account: escrow, amount: payout_amount)
-
-    # post lines
-    return post_transaction "payout_#{account_role}", transaction_id, lines, {
-      description: description,
-      reference_url: reference_url
+  def user_unused_balance_processing_account(user_id)
+    account user_id, {
+      normal_balance: credit,
+      sufixes: [:unused_balance_processing],
+      category_id: :unused_balance_processing
     }
   end
 end
