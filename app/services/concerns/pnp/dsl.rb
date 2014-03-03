@@ -63,6 +63,11 @@ module Pnp
           if subledger_id.present?
             the_account = subledger.accounts.read id: subledger_id
 
+            # attach to a category, if one is present
+            if config[:category_id].present?
+              attach_account_to_category the_account, config[:category_id]
+            end
+
           else
             # prepare the data
             data = { id: subledger_id, description: CGI::escape(key) }
@@ -73,6 +78,11 @@ module Pnp
 
             # map it
             Mapping.map_entity(:account, key, the_account.id)
+
+            # attach to a category, if one is present
+            if config[:category_id].present?
+              attach_account_to_category the_account, config[:category_id]
+            end
           end
 
           return the_account
@@ -201,16 +211,18 @@ module Pnp
       end
   
       def line(account, amount, config)
+        account_config = config.slice(:role, :category_id)
+        
         if not account.present? and config[:global_account_id].present? 
-          account = global_account(config[:global_account_id])
+          account = global_account config[:global_account_id], account_config
         end
 
         if not account.present? and config[:account_payable_id].present? 
-          account = account_payable(config[:account_payable_id])
+          account = account_payable config[:account_payable_id], account_config
         end
 
         if not account.present? and config[:account_receivable_id].present? 
-          account = account_receivable(config[:account_receivable_id])
+          account = account_receivable config[:account_receivable_id], account_config
         end
 
         if config[:callback].present?
