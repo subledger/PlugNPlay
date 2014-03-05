@@ -1,6 +1,14 @@
 package pnp;
 
 import java.net.MalformedURLException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import pnp.to.Balance;
+import pnp.to.Line;
+import pnp.to.Lines;
 
 // see documentation at the main method 
 public class Example {
@@ -96,6 +104,48 @@ public class Example {
 		
 		System.out.println(response);
 	}
+	
+	public void simulateGetUserBalance(String userId) throws ClientException {	
+		System.out.println("Getting User " + userId + " account payable balance");
+		
+		Balance balance = this.client.getUserBalance(userId, new Date());
+		System.out.println("Balance is: " + balance);
+	}
+	
+	public void simulateGetUserTransactionHistory(String userId) throws ClientException, ParseException {
+		System.out.println("Getting User " + userId + " account payable history");
+		
+		Lines lines = null;
+		
+		int perPage = 5;
+		String nextPageId = null;
+		
+		DateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+		Date date = df.parse("01/01/1970");
+		
+		// get paginated user history
+		// - you need to start with a date, and then paginate based on the page id
+		// - date and order work together:
+		//   date and Order.ASC - > will return all results since date
+		//   date and Order.DESC -> will return all results up to date
+		
+		do {
+			System.out.println("Next page id is: " + nextPageId);
+			lines = this.client.getUserTransactionHistory(userId, date, nextPageId, perPage, Order.ASC);
+			
+			for(Line line: lines.getLines()) {
+				System.out.println(line);
+				System.out.println("Current Balance is: " + line.getBalance());
+			}
+			
+			if (lines.hasNext()) {
+				nextPageId = lines.getNextPageId();
+			}
+			
+			System.out.println();
+			
+		} while(lines.hasNext());
+	}
 
 	/**
 	 * This is just an example scenario, where two users add money to the gateway,
@@ -150,9 +200,10 @@ public class Example {
 	 * - This example does not handle communication error from your app to PnP, so it should be
 	 *   handled by your app. Once it a message is successfully delivered to PnP, then it is
 	 *   our job to make sure it gets processed.
+	 * @throws ParseException 
 	 * 
 	 */
-	public static void main(String[] args) throws ClientException, MalformedURLException {
+	public static void main(String[] args) throws ClientException, MalformedURLException, ParseException {
 		// actual pnp client is instantiated inside Example constructor, and reused on every call
 		Example example = new Example("localhost:3000", "pnp", "password");
 		
@@ -176,5 +227,11 @@ public class Example {
 		
 		// user 1 withdraw some money from the gateway itself
 		example.simulateUserFundsTransferredOutOfBank("1", "user1@yourapp.com", "60", "55", "5");
+		
+		// get user 1 balance
+		example.simulateGetUserBalance("user1@yourapp.com");
+		
+		// get user 1 transaction history
+		example.simulateGetUserTransactionHistory("user1@yourapp.com");
 	}
 }

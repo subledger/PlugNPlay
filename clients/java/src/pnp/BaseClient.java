@@ -15,7 +15,9 @@ public class BaseClient {
 	
 	private String host;
 	
-	private URL url;
+	private URL readUrl;	
+	
+	private URL triggerUrl;
 	
 	private String user;
 	
@@ -25,12 +27,21 @@ public class BaseClient {
 		this.host = host;
 		this.user = user;
 		this.password = password;
-		this.url = new URL("http://" + this.host + "/api/1/event/trigger");
+		this.readUrl = new URL("http://" + this.host + "/api/1/event/read");
+		this.triggerUrl = new URL("http://" + this.host + "/api/1/event/trigger");
 	}
 	
-	public String trigger(String eventName, Map<String, String> eventData) throws ClientException {
+	public JSONObject read(String eventName, Map<String, Object> eventData) throws ClientException {
+		return this.postEvent(this.readUrl, eventName, eventData);
+	}	
+	
+	public JSONObject trigger(String eventName, Map<String, Object> eventData) throws ClientException {
+		return this.postEvent(this.triggerUrl, eventName, eventData);
+	}
+	
+	protected JSONObject postEvent(URL url, String eventName, Map<String, Object> eventData) throws ClientException {
         HttpURLConnection conn = null;
- 
+        
         try {
         	// get payload data
     		JSONObject data = new JSONObject();
@@ -40,7 +51,7 @@ public class BaseClient {
             byte[] payload = data.toString().getBytes();
     		
             // open connection
-            conn = (HttpURLConnection)this.url.openConnection();
+            conn = (HttpURLConnection)url.openConnection();
 
             // set basic authentication credentials
             String authString = this.user + ":" + this.password;
@@ -60,7 +71,7 @@ public class BaseClient {
             
             if(status == HttpURLConnection.HTTP_OK) {
             	String response = readInputStream(conn.getInputStream());
-            	return new JSONObject(response).toString();
+            	return new JSONObject(response);
 
             } else {
             	throw new ClientException(status, conn.getResponseMessage());
@@ -73,8 +84,8 @@ public class BaseClient {
             if (conn != null) {
             	conn.disconnect();
             }
-        }
-	}
+        }		
+	}	
 	
     private static String readInputStream(InputStream is) throws IOException {
         Scanner s = null;

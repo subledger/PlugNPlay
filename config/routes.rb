@@ -1,6 +1,7 @@
 PlugNPlay::Application.routes.draw do
   namespace :api do
     api version: 1, module: "v1" do
+      post "event/read"   , to: "event#read"
       post "event/trigger", to: "event#trigger"
     end
   end

@@ -48,6 +48,7 @@ gem 'bootstrap-sass', '~> 3.0.2.0'
 
 # API
 gem 'rocket_pants'
+gem 'active_model_serializers'
 
 # Async processing
 gem 'sidekiq'
