@@ -9,7 +9,13 @@ class Client:
     self.password = password
 
   def trigger(self, event, data):
-    url = self.uri + "/api/1/event/trigger"
+    return self.__post("/api/1/event/trigger", event, data)
+
+  def read(self, event, data):
+    return self.__post("/api/1/event/read", event, data)
+
+  def __post(self, endpoint, event, data):
+    url = self.uri + endpoint
     headers = {"content-type": "application/json"}
     payload = {
       "name": event,
@@ -32,6 +38,9 @@ class Client:
           return self.trigger("payout", kwargs)
 
       else:
-        return self.trigger(name, kwargs)
+        if name.startswith("get_"):
+          return self.read(name[4:], kwargs)
+        else:
+          return self.trigger(name, kwargs)
 
     return _missing

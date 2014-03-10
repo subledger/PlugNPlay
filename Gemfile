@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
-gem 'rails', '4.0.1'
+gem 'rails', '4.0.3'
 
 # Use mysql as the database for Active Record
 gem 'mysql2'
@@ -48,6 +48,7 @@ gem 'bootstrap-sass', '~> 3.0.2.0'
 
 # API
 gem 'rocket_pants'
+gem 'active_model_serializers'
 
 # Async processing
 gem 'sidekiq'
