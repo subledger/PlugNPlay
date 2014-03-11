@@ -406,7 +406,8 @@ def get_account_balance(client, user_id, sufixes):
   tmin = time.time()
 
   # time must be in iso 8601 format
-  now = datetime.datetime.now().isoformat()
+  # XXX to be fixed
+  now = (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat()
 
   # lambda to format the command line response
   on_response = lambda j: (
@@ -430,7 +431,8 @@ def get_account_history(client, user_id, sufixes):
   tmin = time.time()
 
   # time must be in iso 8601 format
-  now = datetime.datetime.now().isoformat()
+  # XXX to be fixed
+  now = (datetime.datetime.now() + datetime.timedelta(days=1)).isoformat()
 
   page_id = None
   message = "No history available"
