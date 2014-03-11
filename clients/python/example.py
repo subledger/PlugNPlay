@@ -492,6 +492,8 @@ def get_account_history(client, user_id, sufixes):
 #
 # 7) We payout the publisher, distributor, government and whatever
 #
+# Ex: python example.py full <transaction_id>
+#
 def example_full(client, transaction_id):
     print "** Running Example: Full"
 
@@ -535,6 +537,8 @@ def example_full(client, transaction_id):
 #
 # 3) User 'cancel' purchase, and the amount is refunded to his account/wallet
 #
+# Ex: python example.py refund_account <transaction_id>
+#
 def example_refund_account(client, transaction_id):
     print "** Running Example: Refund Account"
 
@@ -559,6 +563,8 @@ def example_refund_account(client, transaction_id):
 # 2) User 'cancel' purchase, and the amount is refunded to his credit card
 #    (though the intermediation partner)
 #
+# Ex: python example.py refund_credit_card <transaction_id>
+#
 def example_refund_credit_card(client, transaction_id):
     print "** Running Example: Refund Credit Card"
 
@@ -575,6 +581,8 @@ def example_refund_credit_card(client, transaction_id):
 # ----------------------
 # Retrieve account balances (use example_full to generate data)
 #
+# Ex: python example.py get_balances
+#
 def example_get_balances(client, transaction_id = None):
     print "** Running Example: Get Balances"
 
@@ -590,6 +598,8 @@ def example_get_balances(client, transaction_id = None):
 # ----------------------
 # Retrieve account history (use example_full to generate data)
 #
+# Ex: python example.py get_history
+#
 def example_get_history(client, transaction_id = None):
     print "** Running Example: Get History"
 
@@ -597,6 +607,7 @@ def example_get_history(client, transaction_id = None):
 
 
 ### Main
+# see usage on each example comments
 if __name__ == '__main__':
     # get start time
     tmin = time.time()
