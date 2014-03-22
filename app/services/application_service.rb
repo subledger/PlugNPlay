@@ -12,6 +12,9 @@ class ApplicationService
         at: at
       })
     rescue Subledger::Domain::AccountError => e
+      # first, evict the cache that was created
+      evict_account(user_id, data.slice(:sufixes, :prefixes))
+
       # if account does not exist, return an empty balance
       Subledger::Domain::Balance.new
     end
@@ -48,7 +51,11 @@ class ApplicationService
 
     begin
       account(user_id, data.slice(:sufixes, :prefixes)).lines(config)
+
     rescue Subledger::Domain::AccountError => e
+      # first, evict the cache that was created
+      evict_account(user_id, data.slice(:sufixes, :prefixes))
+
       # f account does not exist, return an empty list of lines
       []
     end
