@@ -46,28 +46,6 @@ module Pnp
       def debit(amount = nil)
         amount.present? ? subledger.debit(amount) : subledger.debit
       end
-
-      def evict_account(id, config = {})
-        config = config.symbolize_keys
-
-        # required parameters
-        id = id.to_sym
-
-        # get subledger id calculated from config
-        to_subledger_config = config.slice(:sufixes, :prefixes)
-
-        # calculate keys
-        entity_key = to_third_party_key(id, to_subledger_config)
-        subledger_id, key = to_subledger_id(:account, id, to_subledger_config)
-
-        # get the existing mapping
-        mapping = Mapping.find_entity_map(:account, entity_key)
-
-        # delete the cache
-        Rails.cache.delete(["pnp", "dsl", "account", key])
-        mapping.flush_cache
-        mapping.destroy
-      end
   
       def account(id, config = {})
         config = config.symbolize_keys
