@@ -46,6 +46,19 @@ module Pnp
       def debit(amount = nil)
         amount.present? ? subledger.debit(amount) : subledger.debit
       end
+
+      def account_exists?(id, config = {})
+        config = config.symbolize_keys
+  
+        # required parameters
+        id = id.to_sym
+  
+        # get subledger id calculated from config
+        to_subledger_config = config.slice(:sufixes, :prefixes)
+        subledger_id, key = to_subledger_id :account, id, to_subledger_config
+
+        return subledger_id.present?
+      end
   
       def account(id, config = {})
         config = config.symbolize_keys

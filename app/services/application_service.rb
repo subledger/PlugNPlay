@@ -7,11 +7,11 @@ class ApplicationService
     user_id = data[:user_id]
     at      = data[:at].present? ? data[:at].to_time : Time.now
 
-    begin
-      account(user_id, data.slice(:sufixes, :prefixes)).balance({
-        at: at
-      })
-    rescue Subledger::Domain::AccountError => e
+    account_config = data.slice(:sufixes, :prefixes)
+
+    if account_exists?(user_id, account_config)
+      account(user_id, account_config).balance({ at: at })
+    else
       # if account does not exist, return an empty balance
       Subledger::Domain::Balance.new
     end
@@ -46,10 +46,11 @@ class ApplicationService
 
     end
 
-    begin
-      account(user_id, data.slice(:sufixes, :prefixes)).lines(config)
+    account_config = data.slice(:sufixes, :prefixes)
 
-    rescue Subledger::Domain::AccountError => e
+    if account_exists?(user_id, account_config)
+      account(user_id, account_config).lines(config)
+    else
       # f account does not exist, return an empty list of lines
       []
     end
