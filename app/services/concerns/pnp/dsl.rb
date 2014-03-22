@@ -60,10 +60,13 @@ module Pnp
         entity_key = to_third_party_key(id, to_subledger_config)
         subledger_id, key = to_subledger_id(:account, id, to_subledger_config)
 
+        # get the existing mapping
+        mapping = Mapping.find_entity_map(:account, entity_key)
+
         # delete the cache
-        Rails.cache.delete(["pnp", "domain", "mapping", entity_key, "exists"])
-        Rails.cache.delete(["pnp", "domain", "mapping", entity_key, "value"])
         Rails.cache.delete(["pnp", "dsl", "account", key])
+        mapping.flush_cache
+        mapping.destroy
       end
   
       def account(id, config = {})
