@@ -57,12 +57,13 @@ module Pnp
         to_subledger_config = config.slice(:sufixes, :prefixes)
 
         # calculate keys
-        entity_key = to_third_party_key id, to_subledger_config
-        subledger_id, key = to_subledger_id :account, id, to_subledger_config
+        entity_key = to_third_party_key(id, to_subledger_config)
+        subledger_id, key = to_subledger_id(:account, id, to_subledger_config)
 
         # delete the cache
-        Rails.cache.delete ["pnp", "domain", "mapping", entity_key, "value"]
-        Rails.cache.delete ["pnp", "dsl", "account", key]
+        Rails.cache.delete(["pnp", "domain", "mapping", entity_key, "exists"])
+        Rails.cache.delete(["pnp", "domain", "mapping", entity_key, "value"])
+        Rails.cache.delete(["pnp", "dsl", "account", key])
       end
   
       def account(id, config = {})
