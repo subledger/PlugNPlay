@@ -46,6 +46,19 @@ module Pnp
       def debit(amount = nil)
         amount.present? ? subledger.debit(amount) : subledger.debit
       end
+
+      def account_exists?(id, config = {})
+        config = config.symbolize_keys
+  
+        # required parameters
+        id = id.to_sym
+  
+        # get subledger id calculated from config
+        to_subledger_config = config.slice(:sufixes, :prefixes)
+        subledger_id, key = to_subledger_id :account, id, to_subledger_config
+
+        return subledger_id.present?
+      end
   
       def account(id, config = {})
         config = config.symbolize_keys
@@ -257,19 +270,23 @@ module Pnp
       end
 
       def to_subledger_id(what, id, config = {})
-        normal_config = { prefixes: [], sufixes: [] }
-        config = normal_config.merge config
-
-        # replace chars on account id for readability
-        id = id.to_s.tr("[@,.]", "_")
-  
         # calculate the third party account key
-        key = (config[:prefixes] + [id] + config[:sufixes]).join "_"
+        key = to_third_party_key(id, config)
   
         # get the subledger account id
         subledger_id = Mapping.entity_map_value(what, key)
   
         return subledger_id, key
+      end
+
+      def to_third_party_key(id, config = {})
+        normal_config = { prefixes: [], sufixes: [] }
+        config = normal_config.merge config
+
+        # replace chars on account id for readability
+        id = id.to_s.tr("[@,.]", "_")
+
+        (config[:prefixes] + [id] + config[:sufixes]).join "_"
       end
     end
   end

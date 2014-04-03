@@ -3,9 +3,6 @@ class Api::V1::EventController < Api::ApplicationController
   around_action :as_subledger_event
 
   def read
-    # conver data keys to symbols
-    @data = @data.symbolize_keys
-
     # call the service method synchronously
     result = subledger_service.send(@name, @data)
 
@@ -29,7 +26,7 @@ private
     event_params
 
     @name = params[:name]
-    @data = params[:data]
+    @data = params[:data].symbolize_keys
 
     # check if method exists
     unless subledger_service.respond_to? @name
